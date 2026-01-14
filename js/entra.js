@@ -43,64 +43,70 @@ async function getAccessTokenWithDeviceCode(config) {
   }
 }
 
-// Load SharePoint configuration from file
+// Global configuration variables
 let sharepointConfig = null;
 let dateFilter = null;
 let accessToken = null;
 
-try {
-  const configPath = path.join(__dirname, 'config.json');
-  if (fs.existsSync(configPath)) {
-    const configContent = fs.readFileSync(configPath, 'utf-8');
-    const config = JSON.parse(configContent);
-    
-    // Validate and set date filter
-    if (config.dateFilter) {
-      if (validDateFilters.includes(config.dateFilter)) {
-        dateFilter = config.dateFilter;
-        console.log(`📅 Using date filter from config: ${dateFilter}`);
+/**
+ * Load and initialize SharePoint configuration
+ * @returns {Promise<void>}
+ */
+async function initializeConfiguration() {
+  try {
+    const configPath = path.join(__dirname, 'config.json');
+    if (fs.existsSync(configPath)) {
+      const configContent = fs.readFileSync(configPath, 'utf-8');
+      const config = JSON.parse(configContent);
+      
+      // Validate and set date filter
+      if (config.dateFilter) {
+        if (validDateFilters.includes(config.dateFilter)) {
+          dateFilter = config.dateFilter;
+          console.log(`📅 Using date filter from config: ${dateFilter}`);
+        } else {
+          console.error(`❌ Invalid date filter in config: "${config.dateFilter}"`);
+          console.error(`   Valid options: ${validDateFilters.join(', ')}`);
+          process.exit(1);
+        }
       } else {
-        console.error(`❌ Invalid date filter in config: "${config.dateFilter}"`);
-        console.error(`   Valid options: ${validDateFilters.join(', ')}`);
-        process.exit(1);
+        console.log('📅 No date filter specified in config, showing all results');
+      }
+      
+      // Configure PnPjs if all required fields are present
+      if (config.siteUrl && config.clientId && config.tenantId) {
+        console.log('🔑 Acquiring access token via device code flow...');
+        accessToken = await getAccessTokenWithDeviceCode(config);
+        console.log('✅ Access token acquired successfully');
+        
+        sp.setup({
+          sp: {
+            fetchClientFactory: () => {
+              return () => {
+                return fetch(arguments[0], {
+                  ...arguments[1],
+                  headers: {
+                    ...arguments[1]?.headers,
+                    'Authorization': `Bearer ${accessToken}`,
+                  },
+                });
+              };
+            },
+          },
+        });
+        console.log('✅ SharePoint configuration loaded from config.json');
+        sharepointConfig = config;
+      } else {
+        console.log('⚠️ SharePoint config file incomplete - data will only be saved locally');
       }
     } else {
-      console.log('📅 No date filter specified in config, showing all results');
+      console.log('⚠️ config.json not found - data will only be saved locally');
+      console.log('📅 No date filter specified, showing all results');
     }
-    
-    // Configure PnPjs if all required fields are present
-    if (config.siteUrl && config.clientId && config.tenantId) {
-      console.log('🔑 Acquiring access token via device code flow...');
-      accessToken = await getAccessTokenWithDeviceCode(config);
-      console.log('✅ Access token acquired successfully');
-      
-      sp.setup({
-        sp: {
-          fetchClientFactory: () => {
-            return () => {
-              return fetch(arguments[0], {
-                ...arguments[1],
-                headers: {
-                  ...arguments[1]?.headers,
-                  'Authorization': `Bearer ${accessToken}`,
-                },
-              });
-            };
-          },
-        },
-      });
-      console.log('✅ SharePoint configuration loaded from config.json');
-      sharepointConfig = config;
-    } else {
-      console.log('⚠️ SharePoint config file incomplete - data will only be saved locally');
-    }
-  } else {
-    console.log('⚠️ config.json not found - data will only be saved locally');
-    console.log('📅 No date filter specified, showing all results');
+  } catch (err) {
+    console.error('⚠️ Error loading SharePoint config:', err.message);
+    sharepointConfig = null;
   }
-} catch (err) {
-  console.error('⚠️ Error loading SharePoint config:', err.message);
-  sharepointConfig = null;
 }
 
 /**
@@ -506,6 +512,9 @@ async function scrapeDetailsList(page, frame) {
 }
 
 (async () => {
+  // Initialize configuration and authenticate
+  await initializeConfiguration();
+  
   const context = await chromium.launchPersistentContext('./edge-profile', {
     channel: 'msedge',
     headless: false, // first runs: keep visible
