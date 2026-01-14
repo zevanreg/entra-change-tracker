@@ -23,6 +23,9 @@ async function getAccessTokenWithDeviceCode(config) {
     },
   };
 
+  const spoResource = new URL(config.siteUrl).origin;
+  const scopes = [`${spoResource}/.default`];
+
   const pca = new msal.PublicClientApplication(msalConfig);
   const deviceCodeRequest = {
     deviceCodeCallback: (response) => {
@@ -31,7 +34,7 @@ async function getAccessTokenWithDeviceCode(config) {
       console.log(response.message);
       console.log('=' .repeat(60));
     },
-    scopes: [`${config.siteUrl}/.default`],
+    scopes: scopes,
   };
 
   try {
