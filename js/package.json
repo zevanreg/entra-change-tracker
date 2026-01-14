@@ -1,0 +1,19 @@
+{
+  "name": "entra-playwright",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "playwright": "^1.57.0"
+  },
+  "dependencies": {
+    "@pnp/nodejs": "^4.17.0",
+    "@pnp/sp": "^4.17.0"
+  }
+}

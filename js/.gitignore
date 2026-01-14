@@ -1,0 +1,43 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# SharePoint configuration (contains sensitive credentials)
+sharepoint-config.json
+
+# Cookie files (contain authentication tokens)
+*.json
+!package.json
+!sharepoint-config.json.template
+
+# Browser profiles
+edge-profile/
+pw-profile/
+
+# Generated output files
+roadmap-*.json
+change-announcements-*.json
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/

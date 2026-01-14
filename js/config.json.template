@@ -1,0 +1,10 @@
+{
+  "siteUrl": "",
+  "clientId": "",
+  "clientSecret": "",
+  "dateFilter": "",
+  "lists": {
+    "roadmap": "EntraRoadmapItems",
+    "changeAnnouncements": "EntraChangeAnnouncements"
+  }
+}
