@@ -23,7 +23,7 @@ Automated web scraping tool for extracting Microsoft Entra (Azure AD) roadmap it
 ### 1. Clone or download this repository
 
 ```bash
-cd c:\repos\entra-playwright
+cd c:\repos\entra-change-tracker\js
 ```
 
 ### 2. Install dependencies
