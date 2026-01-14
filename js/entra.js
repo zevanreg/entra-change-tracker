@@ -3,16 +3,51 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 const { sp } = require('@pnp/sp');
-const { SPFetchClient } = require('@pnp/nodejs');
+const msal = require('@azure/msal-node');
 
 const url = 'https://entra.microsoft.com/#blade/Microsoft_AAD_IAM/ChangeManagementHubList.ReactView';
 
 // Valid date filter options
 const validDateFilters = ['Last 1 month', 'Last 3 months', 'Last 6 months', 'Last 1 year'];
 
+/**
+ * Acquire an access token using device code flow
+ * @param {object} config - Configuration object with clientId and tenantId
+ * @returns {Promise<string>} Access token
+ */
+async function getAccessTokenWithDeviceCode(config) {
+  const msalConfig = {
+    auth: {
+      clientId: config.clientId,
+      authority: `https://login.microsoftonline.com/${config.tenantId}`,
+    },
+  };
+
+  const pca = new msal.PublicClientApplication(msalConfig);
+  const deviceCodeRequest = {
+    deviceCodeCallback: (response) => {
+      console.log('\n🔐 Device Code Authentication Required');
+      console.log('=' .repeat(60));
+      console.log(response.message);
+      console.log('=' .repeat(60));
+    },
+    scopes: [`${config.siteUrl}/.default`],
+  };
+
+  try {
+    const response = await pca.acquireTokenByDeviceCode(deviceCodeRequest);
+    return response.accessToken;
+  } catch (error) {
+    console.error('❌ Error acquiring token:', error.message);
+    throw error;
+  }
+}
+
 // Load SharePoint configuration from file
 let sharepointConfig = null;
 let dateFilter = null;
+let accessToken = null;
+
 try {
   const configPath = path.join(__dirname, 'config.json');
   if (fs.existsSync(configPath)) {
@@ -34,24 +69,33 @@ try {
     }
     
     // Configure PnPjs if all required fields are present
-    if (config.siteUrl && config.clientId && config.clientSecret) {
+    if (config.siteUrl && config.clientId && config.tenantId) {
+      console.log('🔑 Acquiring access token via device code flow...');
+      accessToken = await getAccessTokenWithDeviceCode(config);
+      console.log('✅ Access token acquired successfully');
+      
       sp.setup({
         sp: {
-          fetchClientFactory: () =>
-            new SPFetchClient(
-              config.siteUrl,
-              config.clientId,
-              config.clientSecret
-            ),
+          fetchClientFactory: () => {
+            return () => {
+              return fetch(arguments[0], {
+                ...arguments[1],
+                headers: {
+                  ...arguments[1]?.headers,
+                  'Authorization': `Bearer ${accessToken}`,
+                },
+              });
+            };
+          },
         },
       });
-      console.log('✅ SharePoint configuration loaded from sharepoint-config.json');
+      console.log('✅ SharePoint configuration loaded from config.json');
       sharepointConfig = config;
     } else {
       console.log('⚠️ SharePoint config file incomplete - data will only be saved locally');
     }
   } else {
-    console.log('⚠️ sharepoint-config.json not found - data will only be saved locally');
+    console.log('⚠️ config.json not found - data will only be saved locally');
     console.log('📅 No date filter specified, showing all results');
   }
 } catch (err) {
