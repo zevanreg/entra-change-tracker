@@ -101,7 +101,7 @@ async function setDateRangeFilter(frame, filterOption) {
  * @param {import('playwright').Page} page - The main page
  * @param {import('playwright').Frame} frame - The frame containing the row
  * @param {number} rowIndex - The index of the row to click
- * @returns {Promise<{url: string, description: string}>} The extracted details
+ * @returns {Promise<{url: string, description: string, overview: string}>} The extracted details
  */
 async function extractRowDetails(page, frame, rowIndex) {
   try {
@@ -118,7 +118,7 @@ async function extractRowDetails(page, frame, rowIndex) {
     
     if (!detailsFrame) {
       console.warn(`Details frame not available for row ${rowIndex}`);
-      return { url: '', description: '' };
+      return { url: '', description: '', overview: '' };
     }
     
     // Wait for progress dots to disappear
@@ -127,6 +127,25 @@ async function extractRowDetails(page, frame, rowIndex) {
       await progressDots.waitFor({ state: 'hidden', timeout: 15000 });
     } catch (err) {
       // Progress dots might not exist or already hidden
+    }
+    
+    // Extract overview from "Overview" section
+    let overview = '';
+    try {
+      if (!detailsFrame.isDetached()) {
+        const overviewH3 = detailsFrame.locator('h3').filter({ hasText: 'Overview' });
+        
+        if (await overviewH3.count() > 0) {
+          const parent = overviewH3.locator('..');
+          const spans = parent.locator('span');
+          
+          if (await spans.count() > 0) {
+            overview = await spans.first().innerText() || '';
+          }
+        }
+      }
+    } catch (err) {
+      console.warn(`Could not extract overview for row ${rowIndex}:`, err.message);
     }
     
     // Extract URL from "Next steps" section
@@ -148,18 +167,32 @@ async function extractRowDetails(page, frame, rowIndex) {
       console.warn(`Could not extract URL for row ${rowIndex}:`, err.message);
     }
     
-    // Extract description from "Here's what you will see in this release:" section
+    // Extract description from "What is changing" section (for change announcements)
+    // or "Here's what you will see in this release:" section (for roadmap)
     let description = '';
     try {
       if (!detailsFrame.isDetached()) {
-        const releaseH3 = detailsFrame.locator('h3').filter({ hasText: "Here's what you will see in this release:" });
+        // Try "What is changing" first (change announcements)
+        let descH3 = detailsFrame.locator('h3').filter({ hasText: 'What is changing' });
         
-        if (await releaseH3.count() > 0) {
-          const parent = releaseH3.locator('..');
-          const paragraphs = parent.locator('p');
+        if (await descH3.count() > 0) {
+          const parent = descH3.locator('..');
+          const spans = parent.locator('span');
           
-          if (await paragraphs.count() > 0) {
-            description = await paragraphs.first().innerText() || '';
+          if (await spans.count() > 0) {
+            description = await spans.first().innerText() || '';
+          }
+        } else {
+          // Fall back to "Here's what you will see in this release:" (roadmap)
+          descH3 = detailsFrame.locator('h3').filter({ hasText: "Here's what you will see in this release:" });
+          
+          if (await descH3.count() > 0) {
+            const parent = descH3.locator('..');
+            const paragraphs = parent.locator('p');
+            
+            if (await paragraphs.count() > 0) {
+              description = await paragraphs.first().innerText() || '';
+            }
           }
         }
       }
@@ -170,7 +203,7 @@ async function extractRowDetails(page, frame, rowIndex) {
     // Close details pane with ESC key
     await page.keyboard.press('Escape');
     
-    return { url: url.trim(), description: description.trim() };
+    return { url: url.trim(), description: description.trim(), overview: overview.trim() };
   } catch (err) {
     console.error(`Error extracting details for row ${rowIndex}:`, err.message);
     
@@ -180,7 +213,7 @@ async function extractRowDetails(page, frame, rowIndex) {
       await page.waitForTimeout(500);
     } catch {}
     
-    return { url: '', description: '' };
+    return { url: '', description: '', overview: '' };
   }
 }
 
@@ -283,6 +316,7 @@ async function scrapeDetailsList(page, frame) {
       const details = await extractRowDetails(page, frame, indexNum);
       mapped.url = details.url;
       mapped.description = details.description;
+      mapped.overview = details.overview;
 
       processedRows.push(mapped);
     }

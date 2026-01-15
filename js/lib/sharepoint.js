@@ -99,15 +99,10 @@ function mapScrapedItemToSharePointFields(listName, item, config) {
   // Optional per-list mapping in config.json:
   // {
   //   "fieldMappings": {
-  //     "ChangeAnnouncements": {
+  //     "EntraRoadmapItems": {
   //       "Title": "title",
   //       "Category": "category",
-  //       "Service": "service",
-  //       "ReleaseType": "releaseType",
-  //       "ReleaseDate": "releaseDate",
-  //       "State": "state",
-  //       "Url": "url",
-  //       "Description": "description"
+  //       ...
   //     }
   //   }
   // }
@@ -123,17 +118,45 @@ function mapScrapedItemToSharePointFields(listName, item, config) {
     return fields;
   }
 
-  // Default mapping (adjust to your list internal names if different)
-  return {
-    Title: item.title || item.Title || "",
-    Category: item.category,
-    Service: item.service,
-    ReleaseType: item.releaseType,
-    ReleaseDate: item.releaseDate,
-    State: item.state,
-    Url: item.url,
-    Description: item.description,
-  };
+  // Default mappings based on list name
+  const listNameLower = listName.toLowerCase();
+  
+  // Roadmap list mapping
+  if (listNameLower.includes('roadmap')) {
+    return {
+      Title: item.title || item.Title || "",
+      Category: item.category || "",
+      Service: item.service || "",
+      ReleaseType: item.releaseType || "",
+      ReleaseDate: item.releaseDate || "",
+      State: item.state || "",
+      Overview: item.overview || "",
+      Description: item.description || "",
+      Url: item.url || "",
+    };
+  }
+  
+  // Change Announcements list mapping
+  if (listNameLower.includes('change') || listNameLower.includes('announcement')) {
+    return {
+      Title: item.title || item.Title || "",
+      Service: item.service || "",
+      ChangeType: item.changeEntityChangeType || "",
+      AnnouncementDate: item.announcementDateTime || "",
+      TargetDate: item.targetDateTime || "",
+      ActionRequired: item.isCustomerActionRequired || "",
+      Tags: item.marketingThemes || "", // Use tags if available
+      Overview: item.overview || "",
+      Description: item.description || "",
+      Url: item.url || "",
+    };
+  }
+
+  // If list name doesn't match expected patterns, throw an error
+  throw new Error(
+    `Unknown list name: "${listName}". Expected list name to contain "roadmap" or "change"/"announcement". ` +
+    `Please use proper list names or define custom fieldMappings in config.json.`
+  );
 }
 
 /**
