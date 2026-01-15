@@ -1,21 +1,20 @@
 // test-entra-roadmap.js
-const { chromium } = require('playwright');
-const fs = require('fs');
-const path = require('path');
-const { sp } = require('@pnp/sp');
-const msal = require('@azure/msal-node');
+const { chromium } = require("playwright");
+const fs = require("fs");
+const path = require("path");
+const msal = require("@azure/msal-node");
 
-const url = 'https://entra.microsoft.com/#blade/Microsoft_AAD_IAM/ChangeManagementHubList.ReactView';
+// Node 18+ required (global fetch)
+if (typeof fetch !== "function") {
+  throw new Error("Node 18+ is required (global fetch not found).");
+}
 
-// Valid date filter options
-const validDateFilters = ['Last 1 month', 'Last 3 months', 'Last 6 months', 'Last 1 year'];
+const url =
+  "https://entra.microsoft.com/#blade/Microsoft_AAD_IAM/ChangeManagementHubList.ReactView";
 
-/**
- * Acquire an access token using device code flow
- * @param {object} config - Configuration object with clientId and tenantId
- * @returns {Promise<string>} Access token
- */
-async function getAccessTokenWithDeviceCode(config) {
+const validDateFilters = ["Last 1 month", "Last 3 months", "Last 6 months", "Last 1 year"];
+
+async function getGraphAccessTokenWithDeviceCode(config) {
   const msalConfig = {
     auth: {
       clientId: config.clientId,
@@ -23,25 +22,24 @@ async function getAccessTokenWithDeviceCode(config) {
     },
   };
 
-  const spoResource = new URL(config.siteUrl).origin;
-  const scopes = [`${spoResource}/.default`];
-
   const pca = new msal.PublicClientApplication(msalConfig);
+
   const deviceCodeRequest = {
     deviceCodeCallback: (response) => {
-      console.log('\n🔐 Device Code Authentication Required');
-      console.log('=' .repeat(60));
+      console.log("\n🔐 Device Code Authentication Required");
+      console.log("=".repeat(60));
       console.log(response.message);
-      console.log('=' .repeat(60));
+      console.log("=".repeat(60));
     },
-    scopes: scopes,
+    // ✅ Graph scope (NOT sharepoint.com/.default)
+    scopes: ["https://graph.microsoft.com/.default"],
   };
 
   try {
     const response = await pca.acquireTokenByDeviceCode(deviceCodeRequest);
     return response.accessToken;
   } catch (error) {
-    console.error('❌ Error acquiring token:', error.message);
+    console.error("❌ Error acquiring token:", error.message);
     throw error;
   }
 }
@@ -51,99 +49,194 @@ let sharepointConfig = null;
 let dateFilter = null;
 let accessToken = null;
 
-/**
- * Load and initialize SharePoint configuration
- * @returns {Promise<void>}
- */
+// Graph caches
+let cachedSiteId = null;
+const cachedListIds = new Map(); // listTitle -> listId
+
+async function graphFetch(token, method, graphUrl, body) {
+  const res = await fetch(graphUrl, {
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Graph HTTP ${res.status} ${res.statusText}\nURL: ${graphUrl}\n${text}`);
+  }
+
+  return res.json();
+}
+
+async function getSiteIdFromSiteUrl(token, siteUrl) {
+  if (cachedSiteId) return cachedSiteId;
+
+  const u = new URL(siteUrl);
+  const hostname = u.hostname; // e.g. m365j556631.sharepoint.com
+  const sitePath = u.pathname.replace(/\/$/, ""); // e.g. /sites/EntraChangeTrackers
+
+  // GET /sites/{hostname}:{server-relative-path}
+  const endpoint = `https://graph.microsoft.com/v1.0/sites/${hostname}:${sitePath}`;
+  const site = await graphFetch(token, "GET", endpoint);
+
+  if (!site?.id) throw new Error(`Could not resolve siteId for ${siteUrl}`);
+  cachedSiteId = site.id;
+  return cachedSiteId;
+}
+
+async function getListIdByTitle(token, siteId, listTitle) {
+  if (cachedListIds.has(listTitle)) return cachedListIds.get(listTitle);
+
+  const safeTitle = listTitle.replace(/'/g, "''");
+  const endpoint =
+    `https://graph.microsoft.com/v1.0/sites/${siteId}/lists` +
+    `?$filter=displayName eq '${safeTitle}'&$select=id,displayName`;
+
+  const result = await graphFetch(token, "GET", endpoint);
+  const match = (result.value || []).find((x) => x.displayName === listTitle);
+
+  if (!match) throw new Error(`List not found by title "${listTitle}" (check list name/spelling).`);
+
+  cachedListIds.set(listTitle, match.id);
+  return match.id;
+}
+
+async function createListItem(token, siteId, listId, fields) {
+  const endpoint = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items`;
+  return graphFetch(token, "POST", endpoint, { fields });
+}
+
+function mapScrapedItemToSharePointFields(listName, item, config) {
+  // Optional per-list mapping in config.json:
+  // {
+  //   "fieldMappings": {
+  //     "ChangeAnnouncements": {
+  //       "Title": "title",
+  //       "Category": "category",
+  //       "Service": "service",
+  //       "ReleaseType": "releaseType",
+  //       "ReleaseDate": "releaseDate",
+  //       "State": "state",
+  //       "Url": "url",
+  //       "Description": "description"
+  //     }
+  //   }
+  // }
+  const mapping = config?.fieldMappings?.[listName];
+
+  if (mapping) {
+    const fields = {};
+    for (const [spInternalName, sourceKey] of Object.entries(mapping)) {
+      fields[spInternalName] = item[sourceKey];
+    }
+    // Ensure Title exists if possible
+    if (!fields.Title && item.title) fields.Title = item.title;
+    return fields;
+  }
+
+  // Default mapping (adjust to your list internal names if different)
+  return {
+    Title: item.title || item.Title || "",
+    Category: item.category,
+    Service: item.service,
+    ReleaseType: item.releaseType,
+    ReleaseDate: item.releaseDate,
+    State: item.state,
+    Url: item.url,
+    Description: item.description,
+  };
+}
+
 async function initializeConfiguration() {
   try {
-    const configPath = path.join(__dirname, 'config.json');
-    if (fs.existsSync(configPath)) {
-      const configContent = fs.readFileSync(configPath, 'utf-8');
-      const config = JSON.parse(configContent);
-      
-      // Validate and set date filter
-      if (config.dateFilter) {
-        if (validDateFilters.includes(config.dateFilter)) {
-          dateFilter = config.dateFilter;
-          console.log(`📅 Using date filter from config: ${dateFilter}`);
-        } else {
-          console.error(`❌ Invalid date filter in config: "${config.dateFilter}"`);
-          console.error(`   Valid options: ${validDateFilters.join(', ')}`);
-          process.exit(1);
-        }
+    const configPath = path.join(__dirname, "config.json");
+    if (!fs.existsSync(configPath)) {
+      console.log("⚠️ config.json not found - data will only be saved locally");
+      console.log("📅 No date filter specified, showing all results");
+      return;
+    }
+
+    const configContent = fs.readFileSync(configPath, "utf-8");
+    const config = JSON.parse(configContent);
+
+    // Validate and set date filter
+    if (config.dateFilter) {
+      if (validDateFilters.includes(config.dateFilter)) {
+        dateFilter = config.dateFilter;
+        console.log(`📅 Using date filter from config: ${dateFilter}`);
       } else {
-        console.log('📅 No date filter specified in config, showing all results');
-      }
-      
-      // Configure PnPjs if all required fields are present
-      if (config.siteUrl && config.clientId && config.tenantId) {
-        console.log('🔑 Acquiring access token via device code flow...');
-        accessToken = await getAccessTokenWithDeviceCode(config);
-        console.log('✅ Access token acquired successfully');
-        
-        sp.setup({
-          sp: {
-            fetchClientFactory: () => {
-              return () => {
-                return fetch(arguments[0], {
-                  ...arguments[1],
-                  headers: {
-                    ...arguments[1]?.headers,
-                    'Authorization': `Bearer ${accessToken}`,
-                  },
-                });
-              };
-            },
-          },
-        });
-        console.log('✅ SharePoint configuration loaded from config.json');
-        sharepointConfig = config;
-      } else {
-        console.log('⚠️ SharePoint config file incomplete - data will only be saved locally');
+        console.error(`❌ Invalid date filter in config: "${config.dateFilter}"`);
+        console.error(`   Valid options: ${validDateFilters.join(", ")}`);
+        process.exit(1);
       }
     } else {
-      console.log('⚠️ config.json not found - data will only be saved locally');
-      console.log('📅 No date filter specified, showing all results');
+      console.log("📅 No date filter specified in config, showing all results");
+    }
+
+    if (config.siteUrl && config.clientId && config.tenantId) {
+      console.log("🔑 Acquiring Graph access token via device code flow...");
+      accessToken = await getGraphAccessTokenWithDeviceCode(config);
+      console.log("✅ Access token acquired successfully");
+
+      sharepointConfig = config;
+
+      // reset caches per run
+      cachedSiteId = null;
+      cachedListIds.clear();
+
+      console.log("✅ SharePoint/Graph configuration loaded from config.json");
+    } else {
+      console.log("⚠️ config.json incomplete (siteUrl/clientId/tenantId missing) - data saved locally only");
     }
   } catch (err) {
-    console.error('⚠️ Error loading SharePoint config:', err.message);
+    console.error("⚠️ Error loading SharePoint config:", err.message);
     sharepointConfig = null;
   }
 }
 
-/**
- * Insert extracted data into a SharePoint list
- * @param {string} listName - The name of the SharePoint list
- * @param {object[]} data - The array of data items to insert
- */
 async function insertIntoSharePointList(listName, data) {
-  if (!sharepointConfig) {
+  if (!sharepointConfig || !accessToken) {
     console.log(`⏭️ Skipping SharePoint insertion for ${listName} (not configured)`);
     return;
   }
 
   try {
-    console.log(`📤 Inserting ${data.length} items into SharePoint list: ${listName}`);
+    console.log(`📤 Inserting ${data.length} items into SharePoint list (Graph): ${listName}`);
+
+    const siteId = await getSiteIdFromSiteUrl(accessToken, sharepointConfig.siteUrl);
+    const listId = await getListIdByTitle(accessToken, siteId, listName);
+
     let successCount = 0;
     let errorCount = 0;
 
     for (let i = 0; i < data.length; i++) {
       try {
-        await sp.web.lists.getByTitle(listName).items.add(data[i]);
+        const fields = mapScrapedItemToSharePointFields(listName, data[i], sharepointConfig);
+
+        // Title is required for most lists; enforce minimal safety
+        if (!fields.Title) {
+          fields.Title = data[i]?.title || `Item ${i + 1}`;
+        }
+
+        await createListItem(accessToken, siteId, listId, fields);
+
         successCount++;
         if ((i + 1) % 10 === 0) {
           console.log(`   Progress: ${i + 1}/${data.length} items inserted`);
         }
       } catch (itemErr) {
         errorCount++;
-        console.error(`   Error inserting item ${i + 1}:`, itemErr.message);
+        console.error(`   Error inserting item ${i + 1}:\n${itemErr.message}`);
       }
     }
 
     console.log(`✅ Inserted ${successCount} items into ${listName} (${errorCount} errors)`);
   } catch (err) {
-    console.error(`❌ Error inserting into ${listName}:`, err.message);
+    console.error(`❌ Error inserting into ${listName}:\n${err.message}`);
   }
 }
 
@@ -559,28 +652,27 @@ async function scrapeDetailsList(page, frame) {
     return;
   }
 
-  // Set the date range filter only if specified
-  if (dateFilter) {
-    const filterSet = await setDateRangeFilter(frame, dateFilter);
-    if (!filterSet) {
-      console.warn('⚠️ Could not set date range filter, continuing anyway...');
-    }
-  }
+  // // Set the date range filter only if specified
+  // if (dateFilter) {
+  //   const filterSet = await setDateRangeFilter(frame, dateFilter);
+  //   if (!filterSet) {
+  //     console.warn('⚠️ Could not set date range filter, continuing anyway...');
+  //   }
+  // }
 
-  const roadmapRows = await scrapeDetailsList(page, frame);
+  // const roadmapRows = await scrapeDetailsList(page, frame);
 
-  console.log(roadmapRows.slice(0, 5));
-  console.log(`✅ Extracted ${roadmapRows.length} roadmap items`);
+  // console.log(`✅ Extracted ${roadmapRows.length} roadmap items`);
 
-  // Save roadmap data
+  // // Save roadmap data
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-  const roadmapFile = path.join(__dirname, `roadmap-${timestamp}.json`);
-  fs.writeFileSync(roadmapFile, JSON.stringify(roadmapRows, null, 2), 'utf-8');
-  console.log(`💾 Saved roadmap to ${roadmapFile}`);
+  // const roadmapFile = path.join(__dirname, `roadmap-${timestamp}.json`);
+  // fs.writeFileSync(roadmapFile, JSON.stringify(roadmapRows, null, 2), 'utf-8');
+  // console.log(`💾 Saved roadmap to ${roadmapFile}`);
 
-  // Insert roadmap data into SharePoint list
-  const roadmapListName = sharepointConfig?.lists?.roadmap || 'EntraRoadmapItems';
-  await insertIntoSharePointList(roadmapListName, roadmapRows);
+  // // Insert roadmap data into SharePoint list
+  // const roadmapListName = sharepointConfig?.lists?.roadmap || 'EntraRoadmapItems';
+  // await insertIntoSharePointList(roadmapListName, roadmapRows);
 
   // Click the Change announcements tab
   const changesClicked = await clickTab(frame, /^Change announcements$/i);
@@ -601,7 +693,6 @@ async function scrapeDetailsList(page, frame) {
 
   const changeAnnouncementRows = await scrapeDetailsList(page, frame);
 
-  console.log(changeAnnouncementRows.slice(0, 5));
   console.log(`✅ Extracted ${changeAnnouncementRows.length} change announcements`);
 
   // Save change announcements data

@@ -13,8 +13,6 @@
     "playwright": "^1.57.0"
   },
   "dependencies": {
-    "@azure/msal-node": "^2.6.0",
-    "@pnp/nodejs": "^4.17.0",
-    "@pnp/sp": "^4.17.0"
+    "@azure/msal-node": "^2.6.0"
   }
 }
