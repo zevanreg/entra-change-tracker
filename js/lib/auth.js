@@ -1,4 +1,10 @@
 const msal = require("@azure/msal-node");
+const { 
+  DataProtectionScope, 
+  Environment, 
+  PersistenceCreator, 
+  PersistenceCachePlugin 
+} = require("@azure/msal-node-extensions");
 const fs = require("fs");
 const path = require("path");
 
@@ -15,19 +21,61 @@ let dateFilter = null;
 let accessToken = null;
 
 /**
+ * Create and configure the MSAL cache plugin for token persistence
+ * @returns {Promise<PersistenceCachePlugin>} Configured cache plugin
+ */
+async function createCachePlugin() {
+  const cachePath = path.join(__dirname, "..", ".token-cache.json");
+  
+  const persistenceConfiguration = {
+    cachePath,
+    dataProtectionScope: DataProtectionScope.CurrentUser,
+    serviceName: "entra-change-tracker",
+    accountName: "msal-token-cache",
+    usePlaintextFileOnLinux: true,
+  };
+
+  const persistence = await PersistenceCreator.createPersistence(persistenceConfiguration);
+  return new PersistenceCachePlugin(persistence);
+}
+
+/**
  * Acquire an access token using device code flow for Microsoft Graph
  * @param {object} config - Configuration object with clientId and tenantId
  * @returns {Promise<string>} Access token
  */
 async function getGraphAccessTokenWithDeviceCode(config) {
+  const cachePlugin = await createCachePlugin();
+  
   const msalConfig = {
     auth: {
       clientId: config.clientId,
       authority: `https://login.microsoftonline.com/${config.tenantId}`,
     },
+    cache: {
+      cachePlugin,
+    },
   };
 
   const pca = new msal.PublicClientApplication(msalConfig);
+  
+  // Try silent token acquisition first
+  const accounts = await pca.getTokenCache().getAllAccounts();
+  
+  if (accounts.length > 0) {
+    try {
+      console.log("🔄 Attempting to use cached token...");
+      const silentRequest = {
+        account: accounts[0],
+        scopes: ["https://graph.microsoft.com/.default"],
+      };
+      const response = await pca.acquireTokenSilent(silentRequest);
+      console.log("✅ Using cached token");
+      return response.accessToken;
+    } catch (error) {
+      console.log("⚠️ Cached token invalid or expired, requesting new token...");
+    }
+  }
 
   const deviceCodeRequest = {
     deviceCodeCallback: (response) => {
