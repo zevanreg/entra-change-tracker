@@ -89,6 +89,39 @@ async function createListItem(token, siteId, listId, fields) {
 }
 
 /**
+ * Check if an item with the same title and date already exists in the list
+ * @param {string} token - Access token
+ * @param {string} siteId - Site ID
+ * @param {string} listId - List ID
+ * @param {string} title - Item title
+ * @param {string} dateField - Name of the date field (e.g., 'ReleaseDate', 'AnnouncementDate')
+ * @param {string} dateValue - Date value to check
+ * @returns {Promise<boolean>} True if item exists, false otherwise
+ */
+async function itemExists(token, siteId, listId, title, dateField, dateValue) {
+  if (!title || !dateValue) return false;
+  
+  try {
+    // Escape single quotes in title for OData filter
+    const safeTitle = title.replace(/'/g, "''");
+    const safeDate = dateValue.replace(/'/g, "''");
+    
+    // Query for items with matching Title and date field
+    const endpoint = 
+      `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items` +
+      `?$filter=fields/Title eq '${safeTitle}' and fields/${dateField} eq '${safeDate}'` +
+      `&$select=id&$top=1`;
+    
+    const result = await graphFetch(token, "GET", endpoint);
+    return result.value && result.value.length > 0;
+  } catch (err) {
+    // If query fails, assume item doesn't exist to avoid blocking insertion
+    console.warn(`   Could not check for duplicate: ${err.message}`);
+    return false;
+  }
+}
+
+/**
  * Map scraped item to SharePoint fields
  * @param {string} listName - List name (e.g., 'EntraRoadmapItems')
  * @param {object} item - Scraped item
@@ -143,8 +176,18 @@ async function insertIntoSharePointList(listName, data, accessToken, sharepointC
     const siteId = await getSiteIdFromSiteUrl(accessToken, sharepointConfig.siteUrl);
     const listId = await getListIdByTitle(accessToken, siteId, listName);
 
+    // Determine the date field name based on list name
+    const listNameLower = listName.toLowerCase();
+    let dateField = null;
+    if (listNameLower.includes('roadmap')) {
+      dateField = 'ReleaseDate';
+    } else if (listNameLower.includes('change') || listNameLower.includes('announcement')) {
+      dateField = 'AnnouncementDate';
+    }
+
     let successCount = 0;
     let errorCount = 0;
+    let skippedCount = 0;
 
     for (let i = 0; i < data.length; i++) {
       try {
@@ -155,11 +198,31 @@ async function insertIntoSharePointList(listName, data, accessToken, sharepointC
           fields.Title = data[i]?.title || `Item ${i + 1}`;
         }
 
+        // Check if item already exists (if date field is available)
+        if (dateField && fields[dateField]) {
+          const exists = await itemExists(
+            accessToken,
+            siteId,
+            listId,
+            fields.Title,
+            dateField,
+            fields[dateField]
+          );
+          
+          if (exists) {
+            skippedCount++;
+            if ((i + 1) % 10 === 0) {
+              console.log(`   Progress: ${i + 1}/${data.length} processed (${skippedCount} duplicates skipped)`);
+            }
+            continue;
+          }
+        }
+
         await createListItem(accessToken, siteId, listId, fields);
 
         successCount++;
         if ((i + 1) % 10 === 0) {
-          console.log(`   Progress: ${i + 1}/${data.length} items inserted`);
+          console.log(`   Progress: ${i + 1}/${data.length} processed (${successCount} inserted, ${skippedCount} duplicates)`);
         }
       } catch (itemErr) {
         errorCount++;
@@ -167,7 +230,7 @@ async function insertIntoSharePointList(listName, data, accessToken, sharepointC
       }
     }
 
-    console.log(`✅ Inserted ${successCount} items into ${listName} (${errorCount} errors)`);
+    console.log(`✅ Inserted ${successCount} items into ${listName} (${skippedCount} duplicates skipped, ${errorCount} errors)`);
   } catch (err) {
     console.error(`❌ Error inserting into ${listName}:\n${err.message}`);
   }
