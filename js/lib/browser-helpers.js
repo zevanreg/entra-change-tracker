@@ -2,59 +2,71 @@
  * Browser automation helper functions for Entra portal scraping
  */
 
+const fs = require('fs');
+const path = require('path');
+
+// Load configuration - fail if config cannot be loaded
+const configPath = path.join(__dirname, '..', 'config.json');
+let config;
+try {
+  config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+} catch (err) {
+  throw new Error(`Failed to load config.json from ${configPath}: ${err.message}`);
+}
+
 // ==================== CONSTANTS ====================
 
 const TIMEOUTS = {
-  SPLASH_SCREEN: 30000,
-  PROGRESS_DOTS: 15000,
-  GENERAL_WAIT: 10000,
-  CLICK: 5000,
-  DETACH: 3000,
-  CLOSE_PANE: 2000,
-  BUTTON_CLOSE: 1000,
-  SHORT_DELAY: 1000,
-  MENU_DELAY: 500,
-  CHECKBOX_DELAY: 300
+  SPLASH_SCREEN: config.timeouts.splashScreen,
+  PROGRESS_DOTS: config.timeouts.progressDots,
+  GENERAL_WAIT: config.timeouts.generalWait,
+  CLICK: config.timeouts.click,
+  DETACH: config.timeouts.detach,
+  CLOSE_PANE: config.timeouts.closePane,
+  BUTTON_CLOSE: config.timeouts.buttonClose,
+  SHORT_DELAY: config.timeouts.shortDelay,
+  MENU_DELAY: config.timeouts.menuDelay,
+  CHECKBOX_DELAY: config.timeouts.checkboxDelay
 };
 
 const SELECTORS = {
-  SPLASH_SCREEN: '.fxs-splashscreen',
-  DETAILS_IFRAME: 'iframe[name="ChangeManagementHubEntityDetailsPane.ReactView"]',
-  DETAILS_ROW: 'div[data-automationid="DetailsRow"]',
-  DETAILS_ROW_CHECK: 'div[data-automationid="DetailsRowCheck"]',
-  DETAILS_ROW_FIELDS: 'div[data-automationid="DetailsRowFields"]',
-  DETAILS_ROW_CELL: 'div[data-automationid="DetailsRowCell"]',
-  PROGRESS_DOTS: 'div.fxs-progress-dots',
-  CLOSE_BUTTON: 'button[aria-label="Close content \'Details\'"]',
-  SCROLLABLE_CONTAINER: "div[data-is-scrollable='true']",
-  FILTER_BUTTON_CONTAINER: 'div[data-selection-index="1"]',
-  APPLY_BUTTON: 'button:has-text("Apply")',
-  RADIO_LABEL: '.ms-ChoiceFieldLabel'
+  SPLASH_SCREEN: config.selectors.splashScreen,
+  DETAILS_IFRAME: config.selectors.detailsIframe,
+  DETAILS_ROW: config.selectors.detailsRow,
+  DETAILS_ROW_CHECK: config.selectors.detailsRowCheck,
+  DETAILS_ROW_FIELDS: config.selectors.detailsRowFields,
+  DETAILS_ROW_CELL: config.selectors.detailsRowCell,
+  PROGRESS_DOTS: config.selectors.progressDots,
+  CLOSE_BUTTON: config.selectors.closeButton,
+  SCROLLABLE_CONTAINER: config.selectors.scrollableContainer,
+  FILTER_BUTTON_CONTAINER: config.selectors.filterButtonContainer,
+  APPLY_BUTTON: config.selectors.applyButton,
+  RADIO_LABEL: config.selectors.radioLabel
 };
 
 const SCRAPER_CONFIG = {
-  SCROLL_STEP_PX: 0.85 * 1080,
-  PASS_DELAY_MS: 300,
-  MAX_IDLE_PASSES: 6,
-  TOTAL_TIMEOUT_MS: 180000,
-  MAX_RETRY_ATTEMPTS: 3,
-  CLICK_OUTSIDE_COORDS: { x: 50, y: 50 }
+  SCROLL_STEP_PX: config.scraperConfig.scrollStepPx,
+  PASS_DELAY_MS: config.scraperConfig.passDelayMs,
+  MAX_IDLE_PASSES: config.scraperConfig.maxIdlePasses,
+  TOTAL_TIMEOUT_MS: config.scraperConfig.totalTimeoutMs,
+  MAX_RETRY_ATTEMPTS: config.scraperConfig.maxRetryAttempts,
+  CLICK_OUTSIDE_COORDS: config.scraperConfig.clickOutsideCoords
 };
 
 const FIELD_MAP = {
-  'title': 'title',
-  'changeEntityCategory': 'category',
-  'changeEntityService': 'service',
-  'changeEntityDeliveryStage': 'releaseType',
-  'publishStartDateTime': 'releaseDate',
-  'changeEntityState': 'state'
+  'title': config.fieldMapping.title,
+  'changeEntityCategory': config.fieldMapping.changeEntityCategory,
+  'changeEntityService': config.fieldMapping.changeEntityService,
+  'changeEntityDeliveryStage': config.fieldMapping.changeEntityDeliveryStage,
+  'publishStartDateTime': config.fieldMapping.publishStartDateTime,
+  'changeEntityState': config.fieldMapping.changeEntityState
 };
 
 const TEXT_PATTERNS = {
-  OVERVIEW: 'Overview',
-  NEXT_STEPS: 'Next steps',
-  WHAT_IS_CHANGING: 'What is changing',
-  ROADMAP_DESCRIPTION: "Here's what you will see in this release:"
+  OVERVIEW: config.textPatterns.overview,
+  NEXT_STEPS: config.textPatterns.nextSteps,
+  WHAT_IS_CHANGING: config.textPatterns.whatIsChanging,
+  ROADMAP_DESCRIPTION: config.textPatterns.roadmapDescription
 };
 
 // ==================== HELPER FUNCTIONS ====================

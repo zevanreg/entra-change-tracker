@@ -5,13 +5,10 @@ yarn-debug.log*
 yarn-error.log*
 package-lock.json
 
-# SharePoint configuration (contains sensitive credentials)
-sharepoint-config.json
-
 # Cookie files (contain authentication tokens)
 *.json
 !package.json
-!sharepoint-config.json.template
+!config.json.template
 
 # Browser profiles
 edge-profile/

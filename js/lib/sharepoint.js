@@ -90,73 +90,37 @@ async function createListItem(token, siteId, listId, fields) {
 
 /**
  * Map scraped item to SharePoint fields
- * @param {string} listName - List name
+ * @param {string} listName - List name (e.g., 'EntraRoadmapItems')
  * @param {object} item - Scraped item
- * @param {object} config - SharePoint configuration
+ * @param {object} config - SharePoint configuration with sharePointFieldMappings
  * @returns {object} Mapped fields
  */
 function mapScrapedItemToSharePointFields(listName, item, config) {
-  // Optional per-list mapping in config.json:
-  // {
-  //   "fieldMappings": {
-  //     "EntraRoadmapItems": {
-  //       "Title": "title",
-  //       "Category": "category",
-  //       ...
-  //     }
-  //   }
-  // }
-  const mapping = config?.fieldMappings?.[listName];
-
-  if (mapping) {
-    const fields = {};
-    for (const [spInternalName, sourceKey] of Object.entries(mapping)) {
-      fields[spInternalName] = item[sourceKey];
-    }
-    // Ensure Title exists if possible
-    if (!fields.Title && item.title) fields.Title = item.title;
-    return fields;
-  }
-
-  // Default mappings based on list name
-  const listNameLower = listName.toLowerCase();
+  // Determine the mapping key based on list name
+  const mappingKey = listName.toLowerCase();
+    
+  // Get mapping from config
+  const mapping = config?.sharePointFieldMappings?.[mappingKey];
   
-  // Roadmap list mapping
-  if (listNameLower.includes('roadmap')) {
-    return {
-      Title: item.title || item.Title || "",
-      Category: item.category || "",
-      Service: item.service || "",
-      ReleaseType: item.releaseType || "",
-      ReleaseDate: item.releaseDate || "",
-      State: item.state || "",
-      Overview: item.overview || "",
-      Description: item.description || "",
-      Url: item.url || "",
-    };
+  if (!mapping) {
+    throw new Error(
+      `No SharePoint field mapping found for list "${listName}" (key: ${mappingKey}). ` +
+      `Please define sharePointFieldMappings.${mappingKey} in config.json.`
+    );
   }
   
-  // Change Announcements list mapping
-  if (listNameLower.includes('change') || listNameLower.includes('announcement')) {
-    return {
-      Title: item.title || item.Title || "",
-      Service: item.service || "",
-      ChangeType: item.changeEntityChangeType || "",
-      AnnouncementDate: item.announcementDateTime || "",
-      TargetDate: item.targetDateTime || "",
-      ActionRequired: item.isCustomerActionRequired || "",
-      Tags: item.marketingThemes || "", // Use tags if available
-      Overview: item.overview || "",
-      Description: item.description || "",
-      Url: item.url || "",
-    };
+  // Map fields according to config
+  const fields = {};
+  for (const [spInternalName, sourceKey] of Object.entries(mapping)) {
+    fields[spInternalName] = item[sourceKey] || "";
   }
-
-  // If list name doesn't match expected patterns, throw an error
-  throw new Error(
-    `Unknown list name: "${listName}". Expected list name to contain "roadmap" or "change"/"announcement". ` +
-    `Please use proper list names or define custom fieldMappings in config.json.`
-  );
+  
+  // Ensure Title exists if possible
+  if (!fields.Title && item.title) {
+    fields.Title = item.title;
+  }
+  
+  return fields;
 }
 
 /**
