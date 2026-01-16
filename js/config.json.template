@@ -42,7 +42,7 @@
     "click": 5000,
     "detach": 3000,
     "closePane": 2000,
-    "buttonClose": 1000,
+    "buttonClose": 2000,
     "shortDelay": 1000,
     "menuDelay": 500,
     "checkboxDelay": 300
@@ -67,7 +67,7 @@
       "Description": "description",
       "Url": "url"
     },
-    "changeAnnouncements": {
+    "changeannouncements": {
       "Title": "title",
       "Service": "service",
       "ChangeType": "changeEntityChangeType",
