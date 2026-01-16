@@ -334,16 +334,8 @@ async function findCorrectIframe(page, rowTitle, rowIndex) {
     }
   }
   
-  // Fallback: if no match found, use the last iframe
-  if (allIframes.length > 0) {
-    const lastIframeHandle = await allIframes[allIframes.length - 1].elementHandle();
-    const frame = await lastIframeHandle.contentFrame();
-    if (frame) {
-      console.warn(`No title match for row ${rowIndex}, using last iframe`);
-      return frame;
-    }
-  }
-  
+  console.warn(`Could not find iframe with matching title for row ${rowIndex}`);
+ 
   return null;
 }
 
