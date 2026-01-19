@@ -3,9 +3,10 @@
   "clientId": "",
   "tenantId": "",
   "dateFilter": "",
+  "saveToFile": false,
   "lists": {
-    "roadmap": "EntraRoadmapItems",
-    "changeAnnouncements": "EntraChangeAnnouncements"
+    "roadmap": "Roadmap",
+    "changeAnnouncements": ChangeAnnouncements"
   },
   "selectors": {
     "splashScreen": ".fxs-splashscreen",

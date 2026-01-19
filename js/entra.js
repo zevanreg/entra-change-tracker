@@ -32,7 +32,8 @@ function saveToFile(filename, data, timestamp) {
     await initializeConfiguration();
     resetCaches();
 
-    const { sharepointConfig, dateFilter, accessToken } = getConfiguration();
+    const { sharepointConfig: config, dateFilter, accessToken } = getConfiguration();
+    const saveToFileEnabled = config?.saveToFile !== false;
 
     // Generate timestamp for file names
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
@@ -42,18 +43,22 @@ function saveToFile(filename, data, timestamp) {
 
     // Process Roadmap data
     if (roadmap) {
-      saveToFile('roadmap', roadmap, timestamp);
+      if (saveToFileEnabled) {
+        saveToFile('roadmap', roadmap, timestamp);
+      }
       
-      const roadmapListName = sharepointConfig?.lists?.roadmap || 'EntraRoadmapItems';
-      await insertIntoSharePointList(roadmapListName, roadmap, accessToken, sharepointConfig);
+      const roadmapListName = config?.lists?.roadmap || 'EntraRoadmapItems';
+      await insertIntoSharePointList(roadmapListName, roadmap, accessToken, config);
     }
 
     // Process Change Announcements data
     if (changeAnnouncements) {
-      saveToFile('change-announcements', changeAnnouncements, timestamp);
+      if (saveToFileEnabled) {
+        saveToFile('change-announcements', changeAnnouncements, timestamp);
+      }
       
-      const changeAnnouncementsListName = sharepointConfig?.lists?.changeAnnouncements || 'EntraChangeAnnouncements';
-      await insertIntoSharePointList(changeAnnouncementsListName, changeAnnouncements, accessToken, sharepointConfig);
+      const changeAnnouncementsListName = config?.lists?.changeAnnouncements || 'EntraChangeAnnouncements';
+      await insertIntoSharePointList(changeAnnouncementsListName, changeAnnouncements, accessToken, config);
     }
 
     console.log('✅ Script completed successfully.');

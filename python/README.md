@@ -75,6 +75,7 @@ If you want to sync data to SharePoint:
      "clientId": "your-app-client-id",
      "tenantId": "your-tenant-id",
      "dateFilter": "Last 3 months",
+      "saveToFile": true,
      "lists": {
        "roadmap": "EntraRoadmapItems",
        "changeAnnouncements": "EntraChangeAnnouncements"
@@ -94,6 +95,12 @@ Valid values for `dateFilter` in config:
 - `"Last 6 months"`
 - `"Last 1 year"`
 - `""` (empty for all results)
+
+### File Output
+
+Control local JSON output with `saveToFile` in config:
+- `true` (default) saves timestamped JSON files
+- `false` skips saving local files
 
 ## Usage
 
