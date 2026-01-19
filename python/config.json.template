@@ -1,0 +1,83 @@
+{
+  "siteUrl": "",
+  "clientId": "",
+  "tenantId": "",
+  "dateFilter": "",
+  "lists": {
+    "roadmap": "Roadmap",
+    "changeAnnouncements": "ChangeAnnouncements"
+  },
+  "selectors": {
+    "splashScreen": ".fxs-splashscreen",
+    "detailsIframe": "iframe[name='ChangeManagementHubEntityDetailsPane.ReactView']",
+    "detailsRow": "div[data-automationid='DetailsRow']",
+    "detailsRowCheck": "div[data-automationid='DetailsRowCheck']",
+    "detailsRowFields": "div[data-automationid='DetailsRowFields']",
+    "detailsRowCell": "div[data-automationid='DetailsRowCell']",
+    "progressDots": "div.fxs-progress-dots",
+    "closeButton": "button[aria-label='Close content \\'Details\\'']",
+    "scrollableContainer": "div[data-is-scrollable='true']",
+    "filterButtonContainer": "div[data-selection-index='1']",
+    "applyButton": "button:has-text('Apply')",
+    "radioLabel": ".ms-ChoiceFieldLabel"
+  },
+  "fieldMapping": {
+    "title": "title",
+    "changeEntityCategory": "category",
+    "changeEntityService": "service",
+    "changeEntityDeliveryStage": "releaseType",
+    "publishStartDateTime": "releaseDate",
+    "changeEntityState": "state"
+  },
+  "textPatterns": {
+    "overview": "Overview",
+    "nextSteps": "Next steps",
+    "whatIsChanging": "What is changing",
+    "roadmapDescription": "Here's what you will see in this release:"
+  },
+  "timeouts": {
+    "splashScreen": 30000,
+    "progressDots": 15000,
+    "generalWait": 10000,
+    "click": 5000,
+    "detach": 3000,
+    "closePane": 2000,
+    "buttonClose": 2000,
+    "shortDelay": 1000,
+    "menuDelay": 500,
+    "checkboxDelay": 300
+  },
+  "scraperConfig": {
+    "scrollStepPx": 918,
+    "passDelayMs": 300,
+    "maxIdlePasses": 6,
+    "totalTimeoutMs": 180000,
+    "maxRetryAttempts": 3,
+    "clickOutsideCoords": { "x": 50, "y": 50 }
+  },
+  "sharePointFieldMappings": {
+    "roadmap": {
+      "Title": "title",
+      "Category": "category",
+      "Service": "service",
+      "ReleaseType": "releaseType",
+      "ReleaseDate": "releaseDate",
+      "State": "state",
+      "Overview": "overview",
+      "Description": "description",
+      "Url": "url"
+    },
+    "changeannouncements": {
+      "Title": "title",
+      "Service": "service",
+      "ChangeType": "changeEntityChangeType",
+      "AnnouncementDate": "announcementDateTime",
+      "TargetDate": "targetDateTime",
+      "ActionRequired": "isCustomerActionRequired",
+      "Tags": "marketingThemes",
+      "Overview": "overview",
+      "Description": "description",
+      "Url": "url"
+    }
+  }
+}

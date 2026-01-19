@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+edge-profile/
+python-edge-profile/
+pw-profile/
+config.json
+.token-cache.json
+roadmap-*.json
+change-announcements-*.json
+
+# OS
+.DS_Store
+Thumbs.db
