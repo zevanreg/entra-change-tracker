@@ -7,7 +7,7 @@ Automated web scraping tool for extracting Microsoft Entra (Azure AD) roadmap it
 - 🔍 Scrapes Entra Change Management Hub (Roadmap & Change Announcements)
 - 📊 Extracts detailed information including descriptions and URLs
 - 💾 Saves data locally as timestamped JSON files
-- 📤 Optional SharePoint integration using PnPjs
+- 📤 Optional SharePoint integration using Microsoft Graph API
 - 🎯 Date range filtering support
 - 🔐 Persistent browser context authentication
 
@@ -34,8 +34,8 @@ npm install
 
 This will install:
 - `playwright` - Browser automation
-- `@pnp/sp` - SharePoint REST API client
-- `@pnp/nodejs` - Node.js support for PnPjs
+- `@azure/msal-node` - Microsoft authentication
+- `@azure/msal-node-extensions` - Token cache support
 
 ### 3. Install Playwright browsers (if needed)
 
@@ -50,25 +50,24 @@ npx playwright install msedge
 If you want to sync data to SharePoint:
 
 1. **Copy the template configuration:**
-   ```bash
-   copy sharepoint-config.json.template sharepoint-config.json
-   ```
+  ```bash
+  copy config.json.template config.json
+  ```
 
 2. **Create an Azure AD App Registration:**
    - Go to [Azure Portal](https://portal.azure.com) → Azure Active Directory → App registrations
    - Create a new registration
    - Note the **Application (client) ID**
-   - Create a **client secret** under Certificates & secrets
-   - Grant **SharePoint API permissions**: `Sites.ReadWrite.All`
+  - Grant **Microsoft Graph API permissions**: `Sites.ReadWrite.All`
 
-3. **Edit `sharepoint-config.json`:**
+3. **Edit `config.json`:**
    ```json
    {
      "siteUrl": "https://yourtenant.sharepoint.com/sites/yoursite",
      "clientId": "your-app-client-id",
-     "clientSecret": "your-client-secret",
+    "tenantId": "your-tenant-id",
      "dateFilter": "Last 3 months",
-       "saveToFile": true,
+     "saveToFile": true,
      "lists": {
        "roadmap": "EntraRoadmapItems",
        "changeAnnouncements": "EntraChangeAnnouncements"
@@ -77,8 +76,8 @@ If you want to sync data to SharePoint:
    ```
 
 4. **Create SharePoint lists** with these columns:
-   - **EntraRoadmapItems**: Title, Category, Service, ReleaseType, ReleaseDate, State, URL, Description
-   - **EntraChangeAnnouncements**: Title, Category, Service, ReleaseType, ReleaseDate, State, URL, Description
+   - **Roadmap**: Title, Category, Service, ReleaseType, ReleaseDate, State, URL, Description
+   - **ChangeAnnouncements**: Title, Category, Service, ReleaseType, ReleaseDate, State, URL, Description
 
 ### Date Filter Options
 
@@ -87,7 +86,7 @@ Valid values for `dateFilter` in config:
 - `"Last 3 months"`
 - `"Last 6 months"`
 - `"Last 1 year"`
-- `""` (empty for all results)
+- `""` (empty for all results visible by default)
 
 ### File Output
 
@@ -130,8 +129,8 @@ If configured, data is automatically inserted into specified SharePoint lists wi
 ```
 entra-playwright/
 ├── entra.js                         # Main scraper
-├── sharepoint-config.json           # SharePoint & filter config (gitignored)
-├── sharepoint-config.json.template  # Configuration template
+├── config.json                      # SharePoint & filter config (gitignored)
+├── config.json.template             # Configuration template
 ├── package.json                     # Node.js dependencies
 ├── .gitignore                       # Git ignore rules
 ├── edge-profile/                    # Edge browser profile (gitignored)
@@ -164,7 +163,7 @@ entra-playwright/
 **Problem**: "Error inserting into SharePoint list"
 
 **Solutions:**
-- Verify `sharepoint-config.json` credentials are correct
+- Verify `config.json` credentials are correct
 - Check Azure AD app has `Sites.ReadWrite.All` permission
 - Ensure SharePoint lists exist with correct names
 - Verify list columns match the data structure
@@ -213,7 +212,7 @@ If Entra UI changes, update selectors in:
 
 ⚠️ **Important Security Considerations:**
 
-- Never commit `sharepoint-config.json` (contains secrets)
+- Never commit `config.json`
 - Never commit `edge-profile/` directory (contains credentials)
 - These are already excluded in `.gitignore`
 - Rotate client secrets regularly

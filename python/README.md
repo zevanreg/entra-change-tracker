@@ -73,12 +73,12 @@ If you want to sync data to SharePoint:
    {
      "siteUrl": "https://yourtenant.sharepoint.com/sites/yoursite",
      "clientId": "your-app-client-id",
-     "tenantId": "your-tenant-id",
-     "dateFilter": "Last 3 months",
-      "saveToFile": true,
+   "tenantId": "your-tenant-id",
+   "dateFilter": "Last 3 months",
+   "saveToFile": true,
      "lists": {
-       "roadmap": "EntraRoadmapItems",
-       "changeAnnouncements": "EntraChangeAnnouncements"
+       "roadmap": "Roadmap",
+       "changeAnnouncements": "ChangeAnnouncements"
      }
    }
    ```
@@ -94,7 +94,7 @@ Valid values for `dateFilter` in config:
 - `"Last 3 months"`
 - `"Last 6 months"`
 - `"Last 1 year"`
-- `""` (empty for all results)
+- `""` (empty for all results visible by default)
 
 ### File Output
 
