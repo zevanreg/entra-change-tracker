@@ -94,6 +94,7 @@ If you want to sync data to SharePoint:
    - Go to [Azure Portal](https://portal.azure.com) → Azure Active Directory → App registrations
    - Create a new registration
    - Note the **Application (client) ID** and **Tenant ID**
+   - Enable **Allow public client flows** (Authentication → Advanced settings)
    - Grant **Microsoft Graph API permissions**: `Sites.ReadWrite.All`
    - Admin consent may be required
 
