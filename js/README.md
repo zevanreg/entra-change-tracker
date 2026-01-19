@@ -24,17 +24,46 @@ Automated web scraping tool for extracting Microsoft Entra (Azure AD) roadmap it
 
 ```bash
 cd c:\repos\entra-change-tracker\js
-```
-
-### 2. Install dependencies
-
-```bash
-npm install
-```
-
-This will install:
-- `playwright` - Browser automation
-- `@azure/msal-node` - Microsoft authentication
+   {
+     "siteUrl": "https://yourtenant.sharepoint.com/sites/yoursite",
+     "clientId": "your-app-client-id",
+     "tenantId": "your-tenant-id",
+     "dateFilter": "Last 3 months",
+     "saveToFile": false,
+     "lists": {
+       "roadmap": {
+         "name": "EntraRoadmapItems",
+         "dateField": "ReleaseDate",
+         "mapping": {
+           "Title": "title",
+           "Category": "changeEntityCategory",
+           "Service": "changeEntityService",
+           "ReleaseType": "changeEntityDeliveryStage",
+           "ReleaseDate": "publishStartDateTime",
+           "State": "changeEntityState",
+           "Overview": "overview",
+           "Description": "description",
+           "Url": "url"
+         }
+       },
+       "changeAnnouncements": {
+         "name": "EntraChangeAnnouncements",
+         "dateField": "AnnouncementDate",
+         "mapping": {
+           "Title": "title",
+           "Service": "changeEntityService",
+           "ChangeType": "changeEntityChangeType",
+           "AnnouncementDate": "announcementDateTime",
+           "TargetDate": "targetDateTime",
+           "ActionRequired": "isCustomerActionRequired",
+           "Tags": "marketingThemes",
+           "Overview": "overview",
+           "Description": "description",
+           "Url": "url"
+         }
+       }
+     }
+   }
 - `@azure/msal-node-extensions` - Token cache support
 
 ### 3. Install Playwright browsers (if needed)

@@ -195,16 +195,25 @@ def map_scraped_item_to_sharepoint_fields(
     Returns:
         Mapped fields
     """
-    # Determine the mapping key based on list name
-    mapping_key = list_name.lower()
-    
-    # Get mapping from config
-    mapping = config.get('sharePointFieldMappings', {}).get(mapping_key)
+    list_entries = config.get('lists', {}) if config else {}
+    list_key = None
+    for key, entry in list_entries.items():
+        name = entry.get('name') if isinstance(entry, dict) else None
+        if name and name.lower() == list_name.lower():
+            list_key = key
+            break
+
+    # Get mapping from combined list config or legacy sharePointFieldMappings
+    mapping = None
+    if list_key:
+        mapping = list_entries.get(list_key, {}).get('mapping')
+    if not mapping:
+        mapping = config.get('sharePointFieldMappings', {}).get(list_name.lower())
     
     if not mapping:
         raise RuntimeError(
-            f'No SharePoint field mapping found for list "{list_name}" (key: {mapping_key}). '
-            f'Please define sharePointFieldMappings.{mapping_key} in config.json.'
+            f'No SharePoint field mapping found for list "{list_name}". '
+            f'Please define lists.<key>.mapping (or legacy sharePointFieldMappings) in config.json.'
         )
     
     # Map fields according to config
@@ -244,13 +253,21 @@ def insert_into_sharepoint_list(
         site_id = get_site_id_from_site_url(access_token, sharepoint_config['siteUrl'])
         list_id = get_list_id_by_title(access_token, site_id, list_name)
         
-        # Determine the date field name based on list name
+        # Determine the date field name based on list config or list name
         list_name_lower = list_name.lower()
         date_field = None
-        if 'roadmap' in list_name_lower:
-            date_field = 'ReleaseDate'
-        elif 'change' in list_name_lower or 'announcement' in list_name_lower:
-            date_field = 'AnnouncementDate'
+        list_entries = sharepoint_config.get('lists', {}) if sharepoint_config else {}
+        for key, entry in list_entries.items():
+            name = entry.get('name') if isinstance(entry, dict) else None
+            if name and name.lower() == list_name_lower:
+                date_field = entry.get('dateField')
+                break
+
+        if not date_field:
+            if 'roadmap' in list_name_lower:
+                date_field = 'ReleaseDate'
+            elif 'change' in list_name_lower or 'announcement' in list_name_lower:
+                date_field = 'AnnouncementDate'
         
         success_count = 0
         error_count = 0

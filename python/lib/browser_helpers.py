@@ -58,15 +58,6 @@ SCRAPER_CONFIG = {
     'CLICK_OUTSIDE_COORDS': config['scraperConfig']['clickOutsideCoords']
 }
 
-FIELD_MAP = {
-    'title': config['fieldMapping']['title'],
-    'changeEntityCategory': config['fieldMapping']['changeEntityCategory'],
-    'changeEntityService': config['fieldMapping']['changeEntityService'],
-    'changeEntityDeliveryStage': config['fieldMapping']['changeEntityDeliveryStage'],
-    'publishStartDateTime': config['fieldMapping']['publishStartDateTime'],
-    'changeEntityState': config['fieldMapping']['changeEntityState']
-}
-
 TEXT_PATTERNS = {
     'OVERVIEW': config['textPatterns']['overview'],
     'NEXT_STEPS': config['textPatterns']['nextSteps'],
@@ -498,7 +489,7 @@ async def scrape_details_list(page: Page, frame: Frame) -> List[Dict[str, Any]]:
         frame: The frame containing the DetailsList
         
     Returns:
-        Array of row objects with mapped field names and details
+        Array of row objects with field names and details
     """
     # Accumulator for processed rows
     processed_rows = []
@@ -561,17 +552,11 @@ async def scrape_details_list(page: Page, frame: Frame) -> List[Dict[str, Any]]:
                 value = await cell.inner_text()
                 obj[key] = value.strip()
             
-            # Map field names
-            mapped = {}
-            for key, value in obj.items():
-                new_key = FIELD_MAP.get(key, key)
-                mapped[new_key] = value
-            
             # Extract details by clicking the row (with retry logic for empty descriptions)
             details = {'url': '', 'description': '', 'overview': ''}
             
             for attempt in range(1, SCRAPER_CONFIG['MAX_RETRY_ATTEMPTS'] + 1):
-                details = await extract_row_details(page, frame, index_num, mapped.get('title', ''))
+                details = await extract_row_details(page, frame, index_num, obj.get('title', ''))
                 
                 if details['description']:
                     # Description found, break out of retry loop
@@ -582,11 +567,11 @@ async def scrape_details_list(page: Page, frame: Frame) -> List[Dict[str, Any]]:
                 else:
                     print(f"Empty description for row {index_num} after {SCRAPER_CONFIG['MAX_RETRY_ATTEMPTS']} attempts")
             
-            mapped['url'] = details['url']
-            mapped['description'] = details['description']
-            mapped['overview'] = details['overview']
+            obj['url'] = details['url']
+            obj['description'] = details['description']
+            obj['overview'] = details['overview']
             
-            processed_rows.append(mapped)
+            processed_rows.append(obj)
         
         if new_rows_found:
             idle_passes = 0

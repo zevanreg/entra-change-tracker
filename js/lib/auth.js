@@ -130,12 +130,10 @@ async function initializeConfiguration() {
       console.log("🔑 Acquiring Graph access token via device code flow...");
       accessToken = await getGraphAccessTokenWithDeviceCode(loadedConfig);
       console.log("✅ Access token acquired successfully");
-
-      config = loadedConfig;
-      console.log("✅ SharePoint/Graph configuration loaded from config.json");
     } else {
       console.log("⚠️ config.json incomplete (siteUrl/clientId/tenantId missing) - data saved locally only");
     }
+    config = loadedConfig;
   } catch (err) {
     console.error("⚠️ Error loading SharePoint config:", err.message);
     config = null;

@@ -24,17 +24,46 @@ Automated web scraping tool for extracting Microsoft Entra (Azure AD) roadmap it
 
 ```bash
 cd c:\repos\entra-change-tracker\python
-```
-
-### 2. Create a virtual environment (recommended)
-
-```bash
-python -m venv venv
-
-# On Windows
-venv\Scripts\activate
-
-# On macOS/Linux
+    {
+       "siteUrl": "https://yourtenant.sharepoint.com/sites/yoursite",
+       "clientId": "your-app-client-id",
+       "tenantId": "your-tenant-id",
+       "dateFilter": "Last 3 months",
+       "saveToFile": false,
+       "lists": {
+          "roadmap": {
+             "name": "EntraRoadmapItems",
+             "dateField": "ReleaseDate",
+             "mapping": {
+                "Title": "title",
+                "Category": "changeEntityCategory",
+                "Service": "changeEntityService",
+                "ReleaseType": "changeEntityDeliveryStage",
+                "ReleaseDate": "publishStartDateTime",
+                "State": "changeEntityState",
+                "Overview": "overview",
+                "Description": "description",
+                "Url": "url"
+             }
+          },
+          "changeAnnouncements": {
+             "name": "EntraChangeAnnouncements",
+             "dateField": "AnnouncementDate",
+             "mapping": {
+                "Title": "title",
+                "Service": "changeEntityService",
+                "ChangeType": "changeEntityChangeType",
+                "AnnouncementDate": "announcementDateTime",
+                "TargetDate": "targetDateTime",
+                "ActionRequired": "isCustomerActionRequired",
+                "Tags": "marketingThemes",
+                "Overview": "overview",
+                "Description": "description",
+                "Url": "url"
+             }
+          }
+       }
+    }
 source venv/bin/activate
 ```
 

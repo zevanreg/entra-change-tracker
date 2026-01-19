@@ -53,15 +53,6 @@ const SCRAPER_CONFIG = {
   CLICK_OUTSIDE_COORDS: config.scraperConfig.clickOutsideCoords
 };
 
-const FIELD_MAP = {
-  'title': config.fieldMapping.title,
-  'changeEntityCategory': config.fieldMapping.changeEntityCategory,
-  'changeEntityService': config.fieldMapping.changeEntityService,
-  'changeEntityDeliveryStage': config.fieldMapping.changeEntityDeliveryStage,
-  'publishStartDateTime': config.fieldMapping.publishStartDateTime,
-  'changeEntityState': config.fieldMapping.changeEntityState
-};
-
 const TEXT_PATTERNS = {
   OVERVIEW: config.textPatterns.overview,
   NEXT_STEPS: config.textPatterns.nextSteps,
@@ -450,7 +441,7 @@ async function extractRowDetails(page, frame, rowIndex, rowTitle = '') {
  * Scrapes all rows from a Fluent UI DetailsList with virtualized scrolling
  * @param {import('playwright').Page} page - The main page
  * @param {import('playwright').Frame} frame - The frame containing the DetailsList
- * @returns {Promise<Array<Object>>} Array of row objects with mapped field names and details
+ * @returns {Promise<Array<Object>>} Array of row objects with field names and details
  */
 async function scrapeDetailsList(page, frame) {
   // Accumulator for processed rows
@@ -510,18 +501,11 @@ async function scrapeDetailsList(page, frame) {
         obj[key] = value.trim();
       }
 
-      // Map field names
-      const mapped = {};
-      Object.keys(obj).forEach(key => {
-        const newKey = FIELD_MAP[key] || key;
-        mapped[newKey] = obj[key];
-      });
-
       // Extract details by clicking the row (with retry logic for empty descriptions)
       let details = { url: '', description: '', overview: '' };
       
       for (let attempt = 1; attempt <= SCRAPER_CONFIG.MAX_RETRY_ATTEMPTS; attempt++) {
-        details = await extractRowDetails(page, frame, indexNum, mapped.title || '');
+        details = await extractRowDetails(page, frame, indexNum, obj.title || '');
         
         if (details.description) {
           // Description found, break out of retry loop
@@ -535,11 +519,11 @@ async function scrapeDetailsList(page, frame) {
         }
       }
       
-      mapped.url = details.url;
-      mapped.description = details.description;
-      mapped.overview = details.overview;
+      obj.url = details.url;
+      obj.description = details.description;
+      obj.overview = details.overview;
 
-      processedRows.push(mapped);
+      processedRows.push(obj);
     }
 
     if (newRowsFound) {

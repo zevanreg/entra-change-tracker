@@ -135,11 +135,10 @@ def initialize_configuration() -> None:
             _access_token = get_graph_access_token_with_device_code(loadedConfig)
             print("✅ Access token acquired successfully")
             
-            _config = loadedConfig
-            print("✅ SharePoint/Graph configuration loaded from config.json")
         else:
             print("⚠️ config.json incomplete (siteUrl/clientId/tenantId missing) - data saved locally only")
     
+        _config = loadedConfig
     except Exception as err:
         print(f"⚠️ Error loading SharePoint config: {err}")
         _config = None

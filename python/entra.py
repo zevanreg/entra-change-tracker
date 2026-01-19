@@ -36,9 +36,10 @@ async def main():
         initialize_configuration()
         reset_caches()
         
-        config = get_configuration()
-        date_filter = config['dateFilter']
-        access_token = config['accessToken']
+        app_config = get_configuration()
+        config = app_config['config'] if 'config' in app_config else app_config.get('sharepointConfig')
+        date_filter = app_config['dateFilter']
+        access_token = app_config['accessToken']
         save_to_file_enabled = False
         if config and 'saveToFile' in config:
             save_to_file_enabled = bool(config['saveToFile'])
@@ -58,7 +59,8 @@ async def main():
             
             roadmap_list_name = 'EntraRoadmapItems'
             if config and config.get('lists', {}).get('roadmap'):
-                roadmap_list_name = config['lists']['roadmap']
+                roadmap_entry = config['lists']['roadmap']
+                roadmap_list_name = roadmap_entry.get('name') if isinstance(roadmap_entry, dict) else roadmap_entry
             
             insert_into_sharepoint_list(roadmap_list_name, roadmap, access_token, config)
         
@@ -69,7 +71,8 @@ async def main():
             
             change_announcements_list_name = 'EntraChangeAnnouncements'
             if config and config.get('lists', {}).get('changeAnnouncements'):
-                change_announcements_list_name = config['lists']['changeAnnouncements']
+                change_entry = config['lists']['changeAnnouncements']
+                change_announcements_list_name = change_entry.get('name') if isinstance(change_entry, dict) else change_entry
             
             insert_into_sharepoint_list(
                 change_announcements_list_name,

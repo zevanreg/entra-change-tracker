@@ -125,20 +125,24 @@ async function itemExists(token, siteId, listId, title, dateField, dateValue) {
  * Map scraped item to SharePoint fields
  * @param {string} listName - List name (e.g., 'EntraRoadmapItems')
  * @param {object} item - Scraped item
- * @param {object} config - SharePoint configuration with sharePointFieldMappings
+ * @param {object} config - Configuration
  * @returns {object} Mapped fields
  */
 function mapScrapedItemToSharePointFields(listName, item, config) {
-  // Determine the mapping key based on list name
-  const mappingKey = listName.toLowerCase();
-    
-  // Get mapping from config
-  const mapping = config?.sharePointFieldMappings?.[mappingKey];
+  const listEntries = config?.lists || {};
+  const listKey = Object.keys(listEntries).find(
+    (key) => listEntries[key]?.name?.toLowerCase?.() === listName.toLowerCase()
+  );
+
+  // Get mapping from combined list config or legacy sharePointFieldMappings
+  const mapping = listKey
+    ? listEntries[listKey]?.mapping
+    : config?.sharePointFieldMappings?.[listName.toLowerCase()];
   
   if (!mapping) {
     throw new Error(
-      `No SharePoint field mapping found for list "${listName}" (key: ${mappingKey}). ` +
-      `Please define sharePointFieldMappings.${mappingKey} in config.json.`
+      `No SharePoint field mapping found for list "${listName}". ` +
+      `Please define lists.<key>.mapping (or legacy sharePointFieldMappings) in config.json.`
     );
   }
   
@@ -176,13 +180,19 @@ async function insertIntoSharePointList(listName, data, accessToken, config) {
     const siteId = await getSiteIdFromSiteUrl(accessToken, config.siteUrl);
     const listId = await getListIdByTitle(accessToken, siteId, listName);
 
-    // Determine the date field name based on list name
+    // Determine the date field name based on list config or list name
     const listNameLower = listName.toLowerCase();
-    let dateField = null;
-    if (listNameLower.includes('roadmap')) {
-      dateField = 'ReleaseDate';
-    } else if (listNameLower.includes('change') || listNameLower.includes('announcement')) {
-      dateField = 'AnnouncementDate';
+    const listEntries = config?.lists || {};
+    const listKey = Object.keys(listEntries).find(
+      (key) => listEntries[key]?.name?.toLowerCase?.() === listNameLower
+    );
+    let dateField = listKey ? listEntries[listKey]?.dateField : null;
+    if (!dateField) {
+      if (listNameLower.includes('roadmap')) {
+        dateField = 'ReleaseDate';
+      } else if (listNameLower.includes('change') || listNameLower.includes('announcement')) {
+        dateField = 'AnnouncementDate';
+      }
     }
 
     let successCount = 0;

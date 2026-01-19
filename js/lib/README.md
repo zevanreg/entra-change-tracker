@@ -20,7 +20,7 @@ Handles authentication and configuration management.
 Manages SharePoint operations using Microsoft Graph API.
 
 **Functions:**
-- `insertIntoSharePointList(listName, data, accessToken, config)` - Inserts scraped data into a SharePoint list
+- `insertIntoSharePointList(listName, data, accessToken, config)` - Inserts scraped data using list config (name/mapping/dateField)
 - `resetCaches()` - Resets internal caches for site ID and list IDs
 
 **Internal Functions:**

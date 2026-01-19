@@ -47,7 +47,7 @@ function saveToFile(filename, data, timestamp) {
         saveToFile('roadmap', roadmap, timestamp);
       }
       
-      const roadmapListName = config?.lists?.roadmap || 'EntraRoadmapItems';
+      const roadmapListName = config?.lists?.roadmap?.name || config?.lists?.roadmap || 'EntraRoadmapItems';
       await insertIntoSharePointList(roadmapListName, roadmap, accessToken, config);
     }
 
@@ -57,7 +57,7 @@ function saveToFile(filename, data, timestamp) {
         saveToFile('change-announcements', changeAnnouncements, timestamp);
       }
       
-      const changeAnnouncementsListName = config?.lists?.changeAnnouncements || 'EntraChangeAnnouncements';
+      const changeAnnouncementsListName = config?.lists?.changeAnnouncements?.name || config?.lists?.changeAnnouncements || 'EntraChangeAnnouncements';
       await insertIntoSharePointList(changeAnnouncementsListName, changeAnnouncements, accessToken, config);
     }
 
