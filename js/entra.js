@@ -32,7 +32,7 @@ function saveToFile(filename, data, timestamp) {
     await initializeConfiguration();
     resetCaches();
 
-    const { sharepointConfig: config, dateFilter, accessToken } = getConfiguration();
+    const { config, dateFilter, accessToken } = getConfiguration();
     const saveToFileEnabled = config?.saveToFile !== false;
 
     // Generate timestamp for file names

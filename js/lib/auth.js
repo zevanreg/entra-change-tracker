@@ -16,7 +16,7 @@ if (typeof fetch !== "function") {
 const validDateFilters = ["Last 1 month", "Last 3 months", "Last 6 months", "Last 1 year"];
 
 // Global configuration variables
-let sharepointConfig = null;
+let config = null;
 let dateFilter = null;
 let accessToken = null;
 
@@ -110,15 +110,15 @@ async function initializeConfiguration() {
     }
 
     const configContent = fs.readFileSync(configPath, "utf-8");
-    const config = JSON.parse(configContent);
+    const loadedConfig = JSON.parse(configContent);
 
     // Validate and set date filter
-    if (config.dateFilter) {
-      if (validDateFilters.includes(config.dateFilter)) {
-        dateFilter = config.dateFilter;
+    if (loadedConfig.dateFilter) {
+      if (validDateFilters.includes(loadedConfig.dateFilter)) {
+        dateFilter = loadedConfig.dateFilter;
         console.log(`📅 Using date filter from config: ${dateFilter}`);
       } else {
-        console.error(`❌ Invalid date filter in config: "${config.dateFilter}"`);
+        console.error(`❌ Invalid date filter in config: "${loadedConfig.dateFilter}"`);
         console.error(`   Valid options: ${validDateFilters.join(", ")}`);
         process.exit(1);
       }
@@ -126,29 +126,29 @@ async function initializeConfiguration() {
       console.log("📅 No date filter specified in config, showing all results");
     }
 
-    if (config.siteUrl && config.clientId && config.tenantId) {
+    if (loadedConfig.siteUrl && loadedConfig.clientId && loadedConfig.tenantId) {
       console.log("🔑 Acquiring Graph access token via device code flow...");
-      accessToken = await getGraphAccessTokenWithDeviceCode(config);
+      accessToken = await getGraphAccessTokenWithDeviceCode(loadedConfig);
       console.log("✅ Access token acquired successfully");
 
-      sharepointConfig = config;
+      config = loadedConfig;
       console.log("✅ SharePoint/Graph configuration loaded from config.json");
     } else {
       console.log("⚠️ config.json incomplete (siteUrl/clientId/tenantId missing) - data saved locally only");
     }
   } catch (err) {
     console.error("⚠️ Error loading SharePoint config:", err.message);
-    sharepointConfig = null;
+    config = null;
   }
 }
 
 /**
  * Get the current configuration
- * @returns {{sharepointConfig: object|null, dateFilter: string|null, accessToken: string|null}}
+ * @returns {{config: object|null, dateFilter: string|null, accessToken: string|null}}
  */
 function getConfiguration() {
   return {
-    sharepointConfig,
+    config,
     dateFilter,
     accessToken,
   };

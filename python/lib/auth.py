@@ -13,7 +13,7 @@ import msal
 VALID_DATE_FILTERS = ["Last 1 month", "Last 3 months", "Last 6 months", "Last 1 year"]
 
 # Global configuration variables
-_sharepoint_config: Optional[Dict[str, Any]] = None
+_config: Optional[Dict[str, Any]] = None
 _date_filter: Optional[str] = None
 _access_token: Optional[str] = None
 
@@ -105,7 +105,7 @@ def initialize_configuration() -> None:
     """
     Initialize configuration from config.json and acquire access token.
     """
-    global _sharepoint_config, _date_filter, _access_token
+    global _config, _date_filter, _access_token
     
     try:
         config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.json")
@@ -116,33 +116,33 @@ def initialize_configuration() -> None:
             return
         
         with open(config_path, 'r', encoding='utf-8') as f:
-            config = json.load(f)
+            loadedConfig = json.load(f)
         
         # Validate and set date filter
-        if config.get('dateFilter'):
-            if config['dateFilter'] in VALID_DATE_FILTERS:
-                _date_filter = config['dateFilter']
+        if loadedConfig.get('dateFilter'):
+            if loadedConfig['dateFilter'] in VALID_DATE_FILTERS:
+                _date_filter = loadedConfig['dateFilter']
                 print(f"📅 Using date filter from config: {_date_filter}")
             else:
-                print(f"❌ Invalid date filter in config: \"{config['dateFilter']}\"")
+                print(f"❌ Invalid date filter in config: \"{loadedConfig['dateFilter']}\"")
                 print(f"   Valid options: {', '.join(VALID_DATE_FILTERS)}")
                 exit(1)
         else:
             print("📅 No date filter specified in config, showing all results")
         
-        if config.get('siteUrl') and config.get('clientId') and config.get('tenantId'):
+        if loadedConfig.get('siteUrl') and loadedConfig.get('clientId') and loadedConfig.get('tenantId'):
             print("🔑 Acquiring Graph access token via device code flow...")
-            _access_token = get_graph_access_token_with_device_code(config)
+            _access_token = get_graph_access_token_with_device_code(loadedConfig)
             print("✅ Access token acquired successfully")
             
-            _sharepoint_config = config
+            _config = loadedConfig
             print("✅ SharePoint/Graph configuration loaded from config.json")
         else:
             print("⚠️ config.json incomplete (siteUrl/clientId/tenantId missing) - data saved locally only")
     
     except Exception as err:
         print(f"⚠️ Error loading SharePoint config: {err}")
-        _sharepoint_config = None
+        _config = None
 
 
 def get_configuration() -> Dict[str, Any]:
@@ -150,10 +150,10 @@ def get_configuration() -> Dict[str, Any]:
     Get the current configuration.
     
     Returns:
-        Dictionary with sharepointConfig, dateFilter, and accessToken
+        Dictionary with config, dateFilter, and accessToken
     """
     return {
-        'sharepointConfig': _sharepoint_config,
+        'config': _config,
         'dateFilter': _date_filter,
         'accessToken': _access_token
     }

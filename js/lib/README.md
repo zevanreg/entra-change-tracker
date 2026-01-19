@@ -9,7 +9,7 @@ Handles authentication and configuration management.
 
 **Functions:**
 - `initializeConfiguration()` - Loads config.json and acquires access token via device code flow
-- `getConfiguration()` - Returns current configuration (sharepointConfig, dateFilter, accessToken)
+- `getConfiguration()` - Returns current configuration (config, dateFilter, accessToken)
 
 **Exports:**
 - `initializeConfiguration`
@@ -20,7 +20,7 @@ Handles authentication and configuration management.
 Manages SharePoint operations using Microsoft Graph API.
 
 **Functions:**
-- `insertIntoSharePointList(listName, data, accessToken, sharepointConfig)` - Inserts scraped data into a SharePoint list
+- `insertIntoSharePointList(listName, data, accessToken, config)` - Inserts scraped data into a SharePoint list
 - `resetCaches()` - Resets internal caches for site ID and list IDs
 
 **Internal Functions:**
@@ -75,13 +75,13 @@ const { scrapeDetailsList } = require("./lib/browser-helpers");
 await initializeConfiguration();
 resetCaches();
 
-const { sharepointConfig, accessToken } = getConfiguration();
+const { config, accessToken } = getConfiguration();
 
 // Scrape data
 const data = await scrapeDetailsList(page, frame);
 
 // Insert into SharePoint
-await insertIntoSharePointList("MyList", data, accessToken, sharepointConfig);
+await insertIntoSharePointList("MyList", data, accessToken, config);
 ```
 
 ## Dependencies

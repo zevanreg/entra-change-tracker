@@ -37,12 +37,11 @@ async def main():
         reset_caches()
         
         config = get_configuration()
-        sharepoint_config = config['sharepointConfig']
         date_filter = config['dateFilter']
         access_token = config['accessToken']
         save_to_file_enabled = False
-        if sharepoint_config and 'saveToFile' in sharepoint_config:
-            save_to_file_enabled = bool(sharepoint_config['saveToFile'])
+        if config and 'saveToFile' in config:
+            save_to_file_enabled = bool(config['saveToFile'])
         
         # Generate timestamp for file names
         timestamp = datetime.now().isoformat().replace(':', '-').replace('.', '-')[:19]
@@ -58,10 +57,10 @@ async def main():
                 save_to_file('roadmap', roadmap, timestamp)
             
             roadmap_list_name = 'EntraRoadmapItems'
-            if sharepoint_config and sharepoint_config.get('lists', {}).get('roadmap'):
-                roadmap_list_name = sharepoint_config['lists']['roadmap']
+            if config and config.get('lists', {}).get('roadmap'):
+                roadmap_list_name = config['lists']['roadmap']
             
-            insert_into_sharepoint_list(roadmap_list_name, roadmap, access_token, sharepoint_config)
+            insert_into_sharepoint_list(roadmap_list_name, roadmap, access_token, config)
         
         # Process Change Announcements data
         if change_announcements:
@@ -69,14 +68,14 @@ async def main():
                 save_to_file('change-announcements', change_announcements, timestamp)
             
             change_announcements_list_name = 'EntraChangeAnnouncements'
-            if sharepoint_config and sharepoint_config.get('lists', {}).get('changeAnnouncements'):
-                change_announcements_list_name = sharepoint_config['lists']['changeAnnouncements']
+            if config and config.get('lists', {}).get('changeAnnouncements'):
+                change_announcements_list_name = config['lists']['changeAnnouncements']
             
             insert_into_sharepoint_list(
                 change_announcements_list_name,
                 change_announcements,
                 access_token,
-                sharepoint_config
+                config
             )
         
         print('✅ Script completed successfully.')

@@ -161,11 +161,11 @@ function mapScrapedItemToSharePointFields(listName, item, config) {
  * @param {string} listName - The name of the SharePoint list
  * @param {object[]} data - The array of data items to insert
  * @param {string} accessToken - Access token for Graph API
- * @param {object} sharepointConfig - SharePoint configuration
+ * @param {object} config - Configuration
  * @returns {Promise<void>}
  */
-async function insertIntoSharePointList(listName, data, accessToken, sharepointConfig) {
-  if (!sharepointConfig || !accessToken) {
+async function insertIntoSharePointList(listName, data, accessToken, config) {
+  if (!config || !accessToken) {
     console.log(`⏭️ Skipping SharePoint insertion for ${listName} (not configured)`);
     return;
   }
@@ -173,7 +173,7 @@ async function insertIntoSharePointList(listName, data, accessToken, sharepointC
   try {
     console.log(`📤 Inserting ${data.length} items into SharePoint list (Graph): ${listName}`);
 
-    const siteId = await getSiteIdFromSiteUrl(accessToken, sharepointConfig.siteUrl);
+    const siteId = await getSiteIdFromSiteUrl(accessToken, config.siteUrl);
     const listId = await getListIdByTitle(accessToken, siteId, listName);
 
     // Determine the date field name based on list name
@@ -191,7 +191,7 @@ async function insertIntoSharePointList(listName, data, accessToken, sharepointC
 
     for (let i = 0; i < data.length; i++) {
       try {
-        const fields = mapScrapedItemToSharePointFields(listName, data[i], sharepointConfig);
+        const fields = mapScrapedItemToSharePointFields(listName, data[i], config);
 
         // Title is required for most lists; enforce minimal safety
         if (!fields.Title) {
