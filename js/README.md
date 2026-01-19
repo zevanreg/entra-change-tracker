@@ -69,8 +69,8 @@ If you want to sync data to SharePoint:
      "dateFilter": "Last 3 months",
      "saveToFile": true,
      "lists": {
-       "roadmap": "EntraRoadmapItems",
-       "changeAnnouncements": "EntraChangeAnnouncements"
+       "roadmap": "Roadmap",
+       "changeAnnouncements": "ChangeAnnouncements"
      }
    }
    ```

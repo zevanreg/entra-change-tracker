@@ -3,11 +3,11 @@
   "clientId": "",
   "tenantId": "",
   "dateFilter": "",
+  "saveToFile": false,
   "lists": {
     "roadmap": "Roadmap",
     "changeAnnouncements": "ChangeAnnouncements"
   },
-  "saveToFile": false,
   "selectors": {
     "splashScreen": ".fxs-splashscreen",
     "detailsIframe": "iframe[name='ChangeManagementHubEntityDetailsPane.ReactView']",

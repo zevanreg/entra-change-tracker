@@ -6,7 +6,7 @@
   "saveToFile": false,
   "lists": {
     "roadmap": "Roadmap",
-    "changeAnnouncements": ChangeAnnouncements"
+    "changeAnnouncements": "ChangeAnnouncements"
   },
   "selectors": {
     "splashScreen": ".fxs-splashscreen",

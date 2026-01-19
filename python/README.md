@@ -75,7 +75,7 @@ If you want to sync data to SharePoint:
      "clientId": "your-app-client-id",
      "tenantId": "your-tenant-id",
      "dateFilter": "Last 3 months",
-     "saveToFile": true,
+     "saveToFile": false,
      "lists": {
        "roadmap": "Roadmap",
        "changeAnnouncements": "ChangeAnnouncements"
