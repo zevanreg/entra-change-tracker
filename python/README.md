@@ -90,7 +90,9 @@ If you want to sync data to SharePoint:
    copy config.json.template config.json
    ```
 
-2. **Create an Azure AD App Registration:**
+2. **Choose authentication method:**
+   
+   **Option A: Device Code Flow (Default)**
    - Go to [Azure Portal](https://portal.azure.com) → Azure Active Directory → App registrations
    - Create a new registration
    - Note the **Application (client) ID** and **Tenant ID**
@@ -98,12 +100,36 @@ If you want to sync data to SharePoint:
    - Grant **Microsoft Graph API permissions**: `Sites.ReadWrite.All`
    - Admin consent may be required
 
+   **Option B: Integrated Windows Authentication (IWA)**
+   - Uses your current Windows credentials automatically
+   - No app registration required
+   - Requires appropriate Azure AD permissions on your account
+   - Ideal for corporate environments with SSO
+
 3. **Edit `config.json`:**
+   
+   **For Device Code Flow:**
    ```json
    {
      "siteUrl": "https://yourtenant.sharepoint.com/sites/yoursite",
      "clientId": "your-app-client-id",
      "tenantId": "your-tenant-id",
+     "authMethod": "devicecode",
+     "dateFilter": "Last 3 months",
+     "saveToFile": false,
+     "lists": {
+       "roadmap": "Roadmap",
+       "changeAnnouncements": "ChangeAnnouncements"
+     }
+   }
+   ```
+   
+   **For Integrated Windows Authentication:**
+   ```json
+   {
+     "siteUrl": "https://yourtenant.sharepoint.com/sites/yoursite",
+     "tenantId": "your-tenant-id",
+     "authMethod": "iwa",
      "dateFilter": "Last 3 months",
      "saveToFile": false,
      "lists": {
@@ -116,6 +142,23 @@ If you want to sync data to SharePoint:
 4. **Create SharePoint lists** with these columns:
    - **EntraRoadmapItems**: Title, Category, Service, ReleaseType, ReleaseDate, State, URL, Description, Overview
    - **EntraChangeAnnouncements**: Title, Service, ChangeType, AnnouncementDate, TargetDate, ActionRequired, Tags, URL, Description, Overview
+
+### Authentication Methods
+
+The `authMethod` configuration option controls how the tool authenticates with Microsoft Graph:
+
+- **`"devicecode"`** (default): Uses device code flow
+  - Requires `clientId` and `tenantId` in config
+  - Prompts for browser-based authentication on first run
+  - Token is cached in `.token-cache.json` for subsequent runs
+  - Works on any platform
+
+- **`"iwa"`** or **`"default"`**: Uses Integrated Windows Authentication (DefaultAzureCredential)
+  - Uses your current Windows credentials automatically
+  - Only requires `tenantId` in config (no `clientId` needed)
+  - No interactive authentication required
+  - Works best in corporate environments with Azure AD integration
+  - May require Azure CLI or other credential providers to be installed
 
 ### Date Filter Options
 
@@ -143,8 +186,10 @@ python entra.py
 **First run:**
 1. Browser will open (non-headless)
 2. Log in manually to your Microsoft account
-3. Browser profile will be saved in `./python-edge-profile/`
-4. If SharePoint is configured, you'll see a device code authentication prompt
+3. Browser profile will be saved in `./edge-profile/`
+4. If SharePoint is configured:
+   - **Device code flow**: You'll see a device code authentication prompt
+   - **IWA**: Authentication happens automatically using your Windows credentials
 
 **Subsequent runs:**
 - Browser will use saved profile (no login required)
@@ -187,9 +232,19 @@ python/
 - Run `playwright install msedge`
 
 ### Authentication issues
+
+**Device Code Flow:**
 - Delete `.token-cache.json` to force re-authentication
-- Verify clientId and tenantId in `config.json`
+- Verify `clientId` and `tenantId` in `config.json`
 - Ensure app has proper permissions in Azure AD
+- Ensure "Allow public client flows" is enabled in app registration
+
+**Integrated Windows Authentication (IWA):**
+- Ensure you're logged into Windows with your Azure AD account
+- May require Azure CLI installed: `pip install azure-cli` or download from Microsoft
+- Verify `tenantId` in `config.json`
+- Check that your account has appropriate SharePoint permissions
+- Try setting `authMethod` to `"devicecode"` if IWA doesn't work in your environment
 
 ### SharePoint insertion fails
 - Verify list names match exactly (case-sensitive)
@@ -204,9 +259,11 @@ python/
 
 This Python version maintains feature parity with the JavaScript version but with Python-specific implementations:
 - Uses `asyncio` instead of native async/await
-- Uses `msal` library instead of `@azure/msal-node`
+- Uses `msal` library for device code flow (instead of `@azure/msal-node`)
+- Uses `azure-identity` library for IWA (instead of `@azure/identity`)
 - Uses `playwright` async API
 - Uses `requests` library for HTTP calls
+- Supports both device code flow and IWA authentication methods
 
 ## License
 

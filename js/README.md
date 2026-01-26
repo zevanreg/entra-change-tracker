@@ -97,6 +97,7 @@ If you want to sync data to SharePoint:
      "siteUrl": "https://yourtenant.sharepoint.com/sites/yoursite",
      "clientId": "your-app-client-id",
      "tenantId": "your-tenant-id",
+     "authMethod": "devicecode",
      "dateFilter": "Last 3 months",
      "saveToFile": false,
      "lists": {
@@ -105,6 +106,25 @@ If you want to sync data to SharePoint:
      }
    }
    ```
+
+### Authentication Methods
+
+The tool supports two authentication methods for Microsoft Graph API:
+
+1. **Device Code Flow** (`"devicecode"`) - Default
+   - Requires user interaction via browser
+   - Requires `clientId` and `tenantId` in config
+   - Best for first-time setup or when working across different accounts
+   - Token is cached for reuse
+
+2. **Integrated Windows Authentication** (`"iwa"` or `"default"`)
+   - Uses current Windows user credentials automatically
+   - No browser interaction required
+   - Requires user to be signed into Windows with their Microsoft account
+   - Only `tenantId` is required (optional for single-tenant scenarios)
+   - Falls back to other methods (Azure CLI, VS Code, etc.) if IWA unavailable
+
+Set `authMethod` in `config.json` to `"devicecode"` or `"iwa"`.
 
 4. **Create SharePoint lists** with these columns:
    - **Roadmap**: Title, Category, Service, ReleaseType, ReleaseDate, State, URL, Description

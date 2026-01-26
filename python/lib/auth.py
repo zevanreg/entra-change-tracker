@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 
 import msal
+from azure.identity import DefaultAzureCredential
 
 VALID_DATE_FILTERS = ["Last 1 month", "Last 3 months", "Last 6 months", "Last 1 year"]
 
@@ -42,6 +43,33 @@ def _save_token_cache(cache: msal.SerializableTokenCache) -> None:
     if cache.has_state_changed:
         with open(cache_path, 'w') as f:
             f.write(cache.serialize())
+
+
+def get_graph_access_token_with_iwa(config: Dict[str, str]) -> str:
+    """
+    Acquire an access token using DefaultAzureCredential (IWA) for Microsoft Graph.
+    Uses the currently logged-in user's credentials.
+    
+    Args:
+        config: Configuration dictionary (optional tenantId)
+        
+    Returns:
+        Access token string
+    """
+    print("🔄 Using DefaultAzureCredential (Integrated Windows Authentication)...")
+    
+    # Create credential with optional tenant ID
+    credential_kwargs = {}
+    if config.get('tenantId'):
+        credential_kwargs['tenant_id'] = config['tenantId']
+    
+    credential = DefaultAzureCredential(**credential_kwargs)
+    
+    # Get token for Microsoft Graph
+    token_response = credential.get_token("https://graph.microsoft.com/.default")
+    print("✅ Token acquired via DefaultAzureCredential")
+    
+    return token_response.token
 
 
 def get_graph_access_token_with_device_code(config: Dict[str, str]) -> str:
@@ -130,13 +158,26 @@ def initialize_configuration() -> None:
         else:
             print("📅 No date filter specified in config, showing all results")
         
-        if loadedConfig.get('siteUrl') and loadedConfig.get('clientId') and loadedConfig.get('tenantId'):
-            print("🔑 Acquiring Graph access token via device code flow...")
-            _access_token = get_graph_access_token_with_device_code(loadedConfig)
-            print("✅ Access token acquired successfully")
-            
+        # Determine authentication method
+        auth_method = (loadedConfig.get('authMethod') or 'devicecode').lower()
+        
+        if loadedConfig.get('siteUrl'):
+            if auth_method in ['iwa', 'default']:
+                print("🔑 Acquiring Graph access token via DefaultAzureCredential (IWA)...")
+                _access_token = get_graph_access_token_with_iwa(loadedConfig)
+                print("✅ Access token acquired successfully")
+            elif auth_method == 'devicecode':
+                if not loadedConfig.get('clientId') or not loadedConfig.get('tenantId'):
+                    print("❌ clientId and tenantId are required for device code flow")
+                    exit(1)
+                print("🔑 Acquiring Graph access token via device code flow...")
+                _access_token = get_graph_access_token_with_device_code(loadedConfig)
+                print("✅ Access token acquired successfully")
+            else:
+                print(f"❌ Invalid authMethod: \"{auth_method}\". Valid options: 'devicecode', 'iwa', 'default'")
+                exit(1)
         else:
-            print("⚠️ config.json incomplete (siteUrl/clientId/tenantId missing) - data saved locally only")
+            print("⚠️ config.json incomplete (siteUrl missing) - data saved locally only")
     
         _config = loadedConfig
     except Exception as err:

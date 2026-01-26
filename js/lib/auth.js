@@ -5,6 +5,7 @@ const {
   PersistenceCreator, 
   PersistenceCachePlugin 
 } = require("@azure/msal-node-extensions");
+const { DefaultAzureCredential } = require("@azure/identity");
 const fs = require("fs");
 const path = require("path");
 
@@ -37,6 +38,30 @@ async function createCachePlugin() {
 
   const persistence = await PersistenceCreator.createPersistence(persistenceConfiguration);
   return new PersistenceCachePlugin(persistence);
+}
+
+/**
+ * Acquire an access token using DefaultAzureCredential (IWA) for Microsoft Graph
+ * Uses the currently logged-in user's credentials
+ * @param {object} config - Configuration object (optional tenantId)
+ * @returns {Promise<string>} Access token
+ */
+async function getGraphAccessTokenWithIWA(config) {
+  console.log("🔄 Using DefaultAzureCredential (Integrated Windows Authentication)...");
+  
+  // Create credential with optional tenant ID
+  const credentialOptions = {};
+  if (config.tenantId) {
+    credentialOptions.tenantId = config.tenantId;
+  }
+  
+  const credential = new DefaultAzureCredential(credentialOptions);
+  
+  // Get token for Microsoft Graph
+  const tokenResponse = await credential.getToken("https://graph.microsoft.com/.default");
+  console.log("✅ Token acquired via DefaultAzureCredential");
+  
+  return tokenResponse.token;
 }
 
 /**
@@ -126,12 +151,28 @@ async function initializeConfiguration() {
       console.log("📅 No date filter specified in config, showing all results");
     }
 
-    if (loadedConfig.siteUrl && loadedConfig.clientId && loadedConfig.tenantId) {
-      console.log("🔑 Acquiring Graph access token via device code flow...");
-      accessToken = await getGraphAccessTokenWithDeviceCode(loadedConfig);
-      console.log("✅ Access token acquired successfully");
+    // Determine authentication method
+    const authMethod = (loadedConfig.authMethod || "devicecode").toLowerCase();
+    
+    if (loadedConfig.siteUrl) {
+      if (authMethod === "iwa" || authMethod === "default") {
+        console.log("🔑 Acquiring Graph access token via DefaultAzureCredential (IWA)...");
+        accessToken = await getGraphAccessTokenWithIWA(loadedConfig);
+        console.log("✅ Access token acquired successfully");
+      } else if (authMethod === "devicecode") {
+        if (!loadedConfig.clientId || !loadedConfig.tenantId) {
+          console.error("❌ clientId and tenantId are required for device code flow");
+          process.exit(1);
+        }
+        console.log("🔑 Acquiring Graph access token via device code flow...");
+        accessToken = await getGraphAccessTokenWithDeviceCode(loadedConfig);
+        console.log("✅ Access token acquired successfully");
+      } else {
+        console.error(`❌ Invalid authMethod: "${authMethod}". Valid options: 'devicecode', 'iwa', 'default'`);
+        process.exit(1);
+      }
     } else {
-      console.log("⚠️ config.json incomplete (siteUrl/clientId/tenantId missing) - data saved locally only");
+      console.log("⚠️ config.json incomplete (siteUrl missing) - data saved locally only");
     }
     config = loadedConfig;
   } catch (err) {

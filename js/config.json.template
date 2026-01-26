@@ -2,6 +2,7 @@
   "siteUrl": "",
   "clientId": "",
   "tenantId": "",
+  "authMethod": "devicecode",
   "dateFilter": "",
   "saveToFile": false,
   "lists": {
