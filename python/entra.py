@@ -11,7 +11,7 @@ from pathlib import Path
 
 from lib.auth import initialize_configuration, get_configuration
 from lib.sharepoint import insert_into_sharepoint_list, reset_caches
-from lib.scraper import scrape_entra_portal
+from lib.scraper import scrape_all_sources
 
 
 def save_to_file(filename: str, data: list, timestamp: str) -> None:
@@ -47,10 +47,11 @@ async def main():
         # Generate timestamp for file names
         timestamp = datetime.now().isoformat().replace(':', '-').replace('.', '-')[:19]
         
-        # Scrape data from Entra portal
-        result = await scrape_entra_portal(date_filter)
+        # Scrape data from all sources
+        result = await scrape_all_sources(date_filter)
         roadmap = result['roadmap']
         change_announcements = result['changeAnnouncements']
+        whats_new = result['whatsNew']
         
         # Process Roadmap data
         if roadmap:
@@ -77,6 +78,23 @@ async def main():
             insert_into_sharepoint_list(
                 change_announcements_list_name,
                 change_announcements,
+                access_token,
+                config
+            )
+        
+        # Process What's New data
+        if whats_new:
+            if save_to_file_enabled:
+                save_to_file('whats-new', whats_new, timestamp)
+            
+            whats_new_list_name = 'EntraWhatsNew'
+            if config and config.get('lists', {}).get('whatsNew'):
+                whats_new_entry = config['lists']['whatsNew']
+                whats_new_list_name = whats_new_entry.get('name') if isinstance(whats_new_entry, dict) else whats_new_entry
+            
+            insert_into_sharepoint_list(
+                whats_new_list_name,
+                whats_new,
                 access_token,
                 config
             )

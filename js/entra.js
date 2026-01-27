@@ -9,7 +9,7 @@ const path = require("path");
 // Import modules
 const { initializeConfiguration, getConfiguration } = require("./lib/auth");
 const { insertIntoSharePointList, resetCaches } = require("./lib/sharepoint");
-const { scrapeEntraPortal } = require("./lib/scraper");
+const { scrapeAllSources } = require("./lib/scraper");
 
 /**
  * Save data to JSON file
@@ -38,8 +38,8 @@ function saveToFile(filename, data, timestamp) {
     // Generate timestamp for file names
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
 
-    // Scrape data from Entra portal
-    const { roadmap, changeAnnouncements } = await scrapeEntraPortal(dateFilter);
+    // Scrape data from all sources
+    const { roadmap, changeAnnouncements, whatsNew } = await scrapeAllSources(dateFilter);
 
     // Process Roadmap data
     if (roadmap) {
@@ -59,6 +59,16 @@ function saveToFile(filename, data, timestamp) {
       
       const changeAnnouncementsListName = config?.lists?.changeAnnouncements?.name || config?.lists?.changeAnnouncements || 'EntraChangeAnnouncements';
       await insertIntoSharePointList(changeAnnouncementsListName, changeAnnouncements, accessToken, config);
+    }
+
+    // Process What's New data
+    if (whatsNew) {
+      if (saveToFileEnabled) {
+        saveToFile('whats-new', whatsNew, timestamp);
+      }
+      
+      const whatsNewListName = config?.lists?.whatsNew?.name || config?.lists?.whatsNew || 'EntraWhatsNew';
+      await insertIntoSharePointList(whatsNewListName, whatsNew, accessToken, config);
     }
 
     console.log('✅ Script completed successfully.');

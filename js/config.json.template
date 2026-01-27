@@ -36,6 +36,20 @@
         "Description": "description",
         "Url": "url"
       }
+    },
+    "whatsNew": {
+      "name": "WhatsNew",
+      "dateField": "Date",
+      "mapping": {
+        "Title": "title",
+        "Release_x0020_Type": "releaseType",
+        "Type": "type",
+        "Service_x0020_Category": "serviceCategory",
+        "Product_x0020_Capability": "productCapability",
+        "Detail": "detail",
+        "Link": "link",
+        "Date": "date"
+      }
     }
   },
   "selectors": {
@@ -78,6 +92,12 @@
     "maxRetryAttempts": 3,
     "clickOutsideCoords": { "x": 50, "y": 50 }
   },
-  "sharePointFieldMappings": {
+  "releaseTypeMapping": {
+    "General Availability": "General Availability",
+    "Public preview": "Public Preview",
+    "Deprecated": "Deprecated",
+    "Deprecation": "Deprecated",
+    "Retirement": "Deprecated",
+    "Plan for change": "Plan for Change"
   }
 }

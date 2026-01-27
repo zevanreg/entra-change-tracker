@@ -6,8 +6,11 @@ Handles all browser automation and data extraction from Entra portal
 import re
 from pathlib import Path
 from typing import Dict, Any, List, Optional
+from datetime import datetime
 
 from playwright.async_api import async_playwright, Page, Frame
+from bs4 import BeautifulSoup
+import requests
 
 from .browser_helpers import (
     wait_for_splash_screen,
@@ -15,8 +18,47 @@ from .browser_helpers import (
     set_date_range_filter,
     scrape_details_list
 )
+from .auth import get_configuration
 
 ENTRA_URL = "https://entra.microsoft.com/#blade/Microsoft_AAD_IAM/ChangeManagementHubList.ReactView"
+
+
+def extract_release_type_from_title(title: str) -> tuple[str, str]:
+    """
+    Extract release type from the beginning of the title.
+    
+    Args:
+        title: The full title string
+        
+    Returns:
+        Tuple of (release_type, cleaned_title)
+    """
+    config = get_configuration().get('config', {})
+    release_type_mapping = config.get('releaseTypeMapping', {})
+    
+    # Check if title starts with any known release type (case-insensitive)
+    title_lower = title.lower()
+    for page_value, mapped_value in release_type_mapping.items():
+        if title_lower.startswith(page_value.lower()):
+            # Extract the part after the release type
+            remainder = title[len(page_value):].strip()
+            # Remove common separators at the start
+            for sep in ['-', ':', '–', '—']:
+                if remainder.startswith(sep):
+                    remainder = remainder[1:].strip()
+                    break
+            return mapped_value, remainder
+    
+    # No release type found - check if there's an unmapped one
+    if any(sep in title[:50] for sep in [' - ', ': ', ' – ']):
+        for sep in [' - ', ': ', ' – ']:
+            if sep in title:
+                potential_type = title.split(sep)[0].strip()
+                if potential_type and potential_type[0].isupper():
+                    print(f"⚠️ Unmapped release type found: '{potential_type}' in title: {title[:60]}...")
+                break
+    
+    return '', title
 
 
 async def scrape_tab(
@@ -55,6 +97,148 @@ async def scrape_tab(
     print(f"✅ Extracted {len(data)} items from {tab_name}")
     
     return data
+
+
+def scrape_whats_new_page() -> Optional[List[Dict[str, Any]]]:
+    """
+    Scrape data from Microsoft Learn What's New page.
+    
+    Returns:
+        List of items with Release Type, Title, Type, Service Category, 
+        Product Capability, Detail, Link, Date
+    """
+    url = "https://learn.microsoft.com/en-us/entra/fundamentals/whats-new"
+    
+    try:
+        print(f"🌐 Fetching {url}...")
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        items = []
+        
+        # Find all h2 headers that represent month sections
+        month_sections = soup.find_all('h2', id=True)
+        
+        for month_section in month_sections:
+            month_text = month_section.get_text(strip=True)
+            
+            # Skip if not a date header (e.g., "January 2026")
+            if not any(month in month_text for month in ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']):
+                continue
+            
+            # Find all h3 items under this month
+            current = month_section.find_next_sibling()
+            while current and current.name != 'h2':
+                if current.name == 'h3':
+                    item = extract_whats_new_item(current, month_text)
+                    if item:
+                        items.append(item)
+                current = current.find_next_sibling()
+        
+        print(f"✅ Extracted {len(items)} items from What's New page")
+        return items
+        
+    except Exception as e:
+        print(f"❌ Error scraping What's New page: {e}")
+        return None
+
+
+def extract_whats_new_item(h3_element, month_text: str) -> Optional[Dict[str, Any]]:
+    """
+    Extract a single item from the What's New page.
+    
+    Args:
+        h3_element: The h3 element containing the item title
+        month_text: The month/year text (e.g., "January 2026")
+        
+    Returns:
+        Dictionary with item data
+    """
+    try:
+        item = {
+            'releaseType': '',
+            'title': '',
+            'type': '',
+            'serviceCategory': '',
+            'productCapability': '',
+            'detail': '',
+            'link': '',
+            'date': ''
+        }
+        
+        # Extract title and link
+        title_link = h3_element.find('a')
+        if title_link:
+            full_title = title_link.get_text(strip=True)
+            item['link'] = title_link.get('href', '')
+            if item['link'] and not item['link'].startswith('http'):
+                item['link'] = f"https://learn.microsoft.com{item['link']}"
+        else:
+            full_title = h3_element.get_text(strip=True)
+        
+        # Extract release type from title
+        release_type, cleaned_title = extract_release_type_from_title(full_title)
+        
+        if not release_type and any(sep in full_title for sep in [' - ', ': ', ' – ']):
+            # There might be an unmapped release type
+            for sep in [' - ', ': ', ' – ']:
+                if sep in full_title:
+                    potential_type = full_title.split(sep)[0].strip()
+                    # Check if it looks like a release type (title case, multiple words)
+                    if potential_type and potential_type[0].isupper():
+                        print(f"⚠️ Unmapped release type found: '{potential_type}' in title: {full_title[:60]}...")
+                    break
+        
+        item['releaseType'] = release_type
+        item['title'] = cleaned_title
+        
+        # Set date from month section
+        item['date'] = month_text
+        
+        # Extract detail from the following paragraph(s)
+        detail_parts = []
+        current = h3_element.find_next_sibling()
+        
+        while current and current.name not in ['h2', 'h3']:
+            if current.name == 'p':
+                text = current.get_text(strip=True)
+                if text:
+                    # Look for metadata in strong tags
+                    strong_tags = current.find_all('strong')
+                    for strong in strong_tags:
+                        label = strong.get_text(strip=True).rstrip(':')
+                        # Get the text after the strong tag
+                        next_text = strong.next_sibling
+                        if next_text and isinstance(next_text, str):
+                            value = next_text.strip().strip(':')
+                            
+                            if 'Type' in label and not item['type']:
+                                item['type'] = value
+                            elif 'Service category' in label or 'Service Category' in label:
+                                item['serviceCategory'] = value
+                            elif 'Product capability' in label or 'Product Capability' in label:
+                                item['productCapability'] = value
+                            elif 'Release' in label:
+                                item['releaseType'] = value
+                    
+                    detail_parts.append(text)
+            elif current.name == 'ul':
+                # Add list items to detail
+                list_items = current.find_all('li')
+                for li in list_items:
+                    detail_parts.append(f"• {li.get_text(strip=True)}")
+            
+            current = current.find_next_sibling()
+        
+        item['detail'] = ' '.join(detail_parts)
+        
+        # Only return item if it has a title
+        return item if item['title'] else None
+        
+    except Exception as e:
+        print(f"⚠️ Error extracting item: {e}")
+        return None
 
 
 async def scrape_entra_portal(
@@ -130,3 +314,29 @@ async def scrape_entra_portal(
         finally:
             await context.close()
             print('✅ Browser closed.')
+
+
+async def scrape_all_sources(
+    date_filter: Optional[str] = None
+) -> Dict[str, Optional[List[Dict[str, Any]]]]:
+    """
+    Scrape data from all sources: Entra portal and Microsoft Learn What's New.
+    
+    Args:
+        date_filter: Optional date filter for portal scraping
+        
+    Returns:
+        Dictionary with roadmap, changeAnnouncements, and whatsNew data
+    """
+    # Scrape Entra portal data
+    portal_data = await scrape_entra_portal(date_filter)
+    
+    # Scrape What's New page
+    print("\n📚 Scraping Microsoft Learn What's New page...")
+    whats_new = scrape_whats_new_page()
+    
+    return {
+        'roadmap': portal_data.get('roadmap'),
+        'changeAnnouncements': portal_data.get('changeAnnouncements'),
+        'whatsNew': whats_new
+    }
