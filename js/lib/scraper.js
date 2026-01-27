@@ -9,8 +9,6 @@ const cheerio = require("cheerio");
 const { waitForSplashScreen, clickTab, setDateRangeFilter, scrapeDetailsList } = require("./browser-helpers");
 const { getConfiguration } = require("./auth");
 
-const ENTRA_URL = "https://entra.microsoft.com/#blade/Microsoft_AAD_IAM/ChangeManagementHubList.ReactView";
-
 /**
  * Extract release type from the beginning of the title
  * @param {string} title - The full title string
@@ -81,7 +79,9 @@ function extractWhatsNewItem(h3Element, monthText, $) {
       fullTitle = titleLink.text().trim();
       item.link = titleLink.attr('href') || '';
       if (item.link && !item.link.startsWith('http')) {
-        item.link = `https://learn.microsoft.com${item.link}`;
+        const { config } = getConfiguration();
+        const baseUrl = config?.urls?.microsoftLearnBase || 'https://learn.microsoft.com';
+        item.link = `${baseUrl}${item.link}`;
       }
     } else {
       fullTitle = h3Element.text().trim();
@@ -156,7 +156,8 @@ function extractWhatsNewItem(h3Element, monthText, $) {
  * @returns {Promise<Array<Object>|null>}
  */
 async function scrapeWhatsNewPage() {
-  const url = "https://learn.microsoft.com/en-us/entra/fundamentals/whats-new";
+  const { config } = getConfiguration();
+  const url = config?.urls?.whatsNew || "https://learn.microsoft.com/en-us/entra/fundamentals/whats-new";
   
   try {
     console.log(`🌐 Fetching ${url}...`);
@@ -213,8 +214,11 @@ async function initializeBrowser() {
   
   const page = context.pages()[0];
 
+  const { config } = getConfiguration();
+  const entraUrl = config?.urls?.entraPortal || "https://entra.microsoft.com/#blade/Microsoft_AAD_IAM/ChangeManagementHubList.ReactView";
+
   // Navigate to Entra portal
-  await page.goto(ENTRA_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.goto(entraUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
   // Get the main iframe
   const iframeLocator = page.locator('iframe[name="ChangeManagementHubList.ReactView"]');

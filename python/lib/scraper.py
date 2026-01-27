@@ -20,8 +20,6 @@ from .browser_helpers import (
 )
 from .auth import get_configuration
 
-ENTRA_URL = "https://entra.microsoft.com/#blade/Microsoft_AAD_IAM/ChangeManagementHubList.ReactView"
-
 
 def extract_release_type_from_title(title: str) -> tuple[str, str]:
     """
@@ -107,7 +105,8 @@ def scrape_whats_new_page() -> Optional[List[Dict[str, Any]]]:
         List of items with Release Type, Title, Type, Service Category, 
         Product Capability, Detail, Link, Date
     """
-    url = "https://learn.microsoft.com/en-us/entra/fundamentals/whats-new"
+    config = get_configuration().get('config', {})
+    url = config.get('urls', {}).get('whatsNew', "https://learn.microsoft.com/en-us/entra/fundamentals/whats-new")
     
     try:
         print(f"🌐 Fetching {url}...")
@@ -173,7 +172,9 @@ def extract_whats_new_item(h3_element, month_text: str) -> Optional[Dict[str, An
             full_title = title_link.get_text(strip=True)
             item['link'] = title_link.get('href', '')
             if item['link'] and not item['link'].startswith('http'):
-                item['link'] = f"https://learn.microsoft.com{item['link']}"
+                config = get_configuration().get('config', {})
+                base_url = config.get('urls', {}).get('microsoftLearnBase', 'https://learn.microsoft.com')
+                item['link'] = f"{base_url}{item['link']}"
         else:
             full_title = h3_element.get_text(strip=True)
         
@@ -253,6 +254,9 @@ async def scrape_entra_portal(
     Returns:
         Dictionary with roadmap and changeAnnouncements data
     """
+    config = get_configuration().get('config', {})
+    entra_url = config.get('urls', {}).get('entraPortal', "https://entra.microsoft.com/#blade/Microsoft_AAD_IAM/ChangeManagementHubList.ReactView")
+    
     async with async_playwright() as playwright:
         profile_dir = Path(__file__).resolve().parent.parent / "edge-profile"
         edge_exe = Path("C:/Program Files/Microsoft/Edge/Application/msedge.exe")
@@ -278,7 +282,7 @@ async def scrape_entra_portal(
             page = context.pages[0] if context.pages else await context.new_page()
 
             # Navigate to Entra portal
-            await page.goto(ENTRA_URL, wait_until='domcontentloaded', timeout=60000)
+            await page.goto(entra_url, wait_until='domcontentloaded', timeout=60000)
 
             # Get the main iframe
             iframe_locator = page.locator('iframe[name="ChangeManagementHubList.ReactView"]')

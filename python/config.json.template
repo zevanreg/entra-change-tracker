@@ -6,6 +6,12 @@
   "dateFilter": "",
   "saveToFile": false,
 
+  "urls": {
+    "entraPortal": "https://entra.microsoft.com/#blade/Microsoft_AAD_IAM/ChangeManagementHubList.ReactView",
+    "whatsNew": "https://learn.microsoft.com/en-us/entra/fundamentals/whats-new",
+    "microsoftLearnBase": "https://learn.microsoft.com"
+  },
+
   // ============================================================================
   // SharePoint Lists Configuration
   // ============================================================================
