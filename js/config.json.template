@@ -5,6 +5,10 @@
   "authMethod": "devicecode",
   "dateFilter": "",
   "saveToFile": false,
+
+  // ============================================================================
+  // SharePoint Lists Configuration
+  // ============================================================================
   "lists": {
     "roadmap": {
       "name": "Roadmap",
@@ -52,6 +56,8 @@
       }
     }
   },
+
+  // Browser automation (Playwright-based scraping for Entra Portal)
   "selectors": {
     "splashScreen": ".fxs-splashscreen",
     "detailsIframe": "iframe[name='ChangeManagementHubEntityDetailsPane.ReactView']",
@@ -91,7 +97,8 @@
     "totalTimeoutMs": 180000,
     "maxRetryAttempts": 3,
     "clickOutsideCoords": { "x": 50, "y": 50 }
-  },
+
+  // HTTP-based scraping (for public pages like What's New)
   "releaseTypeMapping": {
     "General Availability": "General Availability",
     "Public preview": "Public Preview",
