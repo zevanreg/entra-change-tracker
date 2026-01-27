@@ -1,122 +1,129 @@
 {
-  "siteUrl": "",
-  "clientId": "",
-  "tenantId": "",
-  "authMethod": "devicecode",
-  "dateFilter": "",
-  "saveToFile": false,
-
-  // ============================================================================
-  // Source URLs
-  // ============================================================================
-  "urls": {
-    "entraPortal": "https://entra.microsoft.com/#blade/Microsoft_AAD_IAM/ChangeManagementHubList.ReactView",
-    "whatsNew": "https://learn.microsoft.com/en-us/entra/fundamentals/whats-new",
-    "microsoftLearnBase": "https://learn.microsoft.com"
+  "sharepoint": {
+    "siteUrl": "",
+    "authentication": {
+      "authMethod": "devicecode",
+      "devicecode": {
+        "clientId": "",
+        "tenantId": ""
+      }
+    }
   },
+  
+  // Browser automation (Playwright-based scraping for Entra Portal)
+  "browserScraping": {
+    "entraPortal": "https://entra.microsoft.com/#blade/Microsoft_AAD_IAM/ChangeManagementHubList.ReactView",
+    "dateFilter": "Last 3 months",
+    "selectors": {
+      "splashScreen": ".fxs-splashscreen",
+      "detailsIframe": "iframe[name='ChangeManagementHubEntityDetailsPane.ReactView']",
+      "detailsRow": "div[data-automationid='DetailsRow']",
+      "detailsRowCheck": "div[data-automationid='DetailsRowCheck']",
+      "detailsRowFields": "div[data-automationid='DetailsRowFields']",
+      "detailsRowCell": "div[data-automationid='DetailsRowCell']",
+      "progressDots": "div.fxs-progress-dots",
+      "closeButton": "button[aria-label='Close content \\'Details\\'']",
+      "scrollableContainer": "div[data-is-scrollable='true']",
+      "filterButtonContainer": "div[data-selection-index='1']",
+      "applyButton": "button:has-text('Apply')",
+      "radioLabel": ".ms-ChoiceFieldLabel"
+    },
+    "textPatterns": {
+      "overview": "Overview",
+      "nextSteps": "Next steps",
+      "whatIsChanging": "What is changing",
+      "roadmapDescription": "Here's what you will see in this release:"
+    },
+    "timeouts": {
+      "splashScreen": 30000,
+      "progressDots": 15000,
+      "generalWait": 10000,
+      "click": 5000,
+      "detach": 3000,
+      "closePane": 2000,
+      "buttonClose": 2000,
+      "shortDelay": 1000,
+      "menuDelay": 500,
+      "checkboxDelay": 300
+    },
+    "scraperConfig": {
+      "scrollStepPx": 918,
+      "passDelayMs": 300,
+      "maxIdlePasses": 6,
+      "totalTimeoutMs": 180000,
+      "maxRetryAttempts": 3,
+      "clickOutsideCoords": { "x": 50, "y": 50 }
+    },
 
-  // ============================================================================
-  // SharePoint Lists Configuration
-  // ============================================================================
-  "lists": {
     "roadmap": {
-      "name": "Roadmap",
-      "dateField": "ReleaseDate",
+      "saveToFile": false,
       "extractDetails": false,
-      "mapping": {
-        "Title": "title",
-        "Category": "changeEntityCategory",
-        "Service": "changeEntityService",
-        "Release_x0020_Type": "changeEntityDeliveryStage",
-        "Release_x0020_Date": "publishStartDateTime",
-        "State": "changeEntityState",
-        "Overview": "overview",
-        "Description": "description",
-        "Url": "url"
+      "sharepointList": {
+        "name": "Roadmap",
+        "dateField": "Release_x0020_Date",
+        "mapping": {
+          "Title": "title",
+          "Category": "changeEntityCategory",
+          "Service": "changeEntityService",
+          "Release_x0020_Type": "changeEntityDeliveryStage",
+          "Release_x0020_Date": "publishStartDateTime",
+          "State": "changeEntityState",
+          "Overview": "overview",
+          "Description": "description",
+          "Url": "url"
+        }
       }
     },
     "changeAnnouncements": {
-      "name": "ChangeAnnouncements",
-      "dateField": "AnnouncementDate",
+      "saveToFile": false,
       "extractDetails": false,
-      "mapping": {
-        "Title": "title",
-        "Service": "changeEntityService",
-        "Change_x0020_Type": "changeEntityChangeType",
-        "Announcement_x0020_Date": "announcementDateTime",
-        "Target_x0020_Date": "targetDateTime",
-        "Action_x0020_Required": "isCustomerActionRequired",
-        "Tags": "marketingThemes",
-        "Overview": "overview",
-        "Description": "description",
-        "Url": "url"
-      }
-    },
-    "whatsNew": {
-      "name": "WhatsNew",
-      "dateField": "Date",
-      "mapping": {
-        "Title": "title",
-        "Release_x0020_Type": "releaseType",
-        "Type": "type",
-        "Service_x0020_Category": "serviceCategory",
-        "Product_x0020_Capability": "productCapability",
-        "Detail": "detail",
-        "Link": "link",
-        "Date": "date"
+      "sharepointList": {
+        "name": "ChangeAnnouncements",
+        "dateField": "Announcement_x0020_Date",
+        "mapping": {
+          "Title": "title",
+          "Service": "changeEntityService",
+          "Change_x0020_Type": "changeEntityChangeType",
+          "Announcement_x0020_Date": "announcementDateTime",
+          "Target_x0020_Date": "targetDateTime",
+          "Action_x0020_Required": "isCustomerActionRequired",
+          "Tags": "marketingThemes",
+          "Overview": "overview",
+          "Description": "description",
+          "Url": "url"
+        }
       }
     }
   },
 
-  // Browser automation (Playwright-based scraping for Entra Portal)
-  "selectors": {
-    "splashScreen": ".fxs-splashscreen",
-    "detailsIframe": "iframe[name='ChangeManagementHubEntityDetailsPane.ReactView']",
-    "detailsRow": "div[data-automationid='DetailsRow']",
-    "detailsRowCheck": "div[data-automationid='DetailsRowCheck']",
-    "detailsRowFields": "div[data-automationid='DetailsRowFields']",
-    "detailsRowCell": "div[data-automationid='DetailsRowCell']",
-    "progressDots": "div.fxs-progress-dots",
-    "closeButton": "button[aria-label='Close content \\'Details\\'']",
-    "scrollableContainer": "div[data-is-scrollable='true']",
-    "filterButtonContainer": "div[data-selection-index='1']",
-    "applyButton": "button:has-text('Apply')",
-    "radioLabel": ".ms-ChoiceFieldLabel"
-  },
-  "textPatterns": {
-    "overview": "Overview",
-    "nextSteps": "Next steps",
-    "whatIsChanging": "What is changing",
-    "roadmapDescription": "Here's what you will see in this release:"
-  },
-  "timeouts": {
-    "splashScreen": 30000,
-    "progressDots": 15000,
-    "generalWait": 10000,
-    "click": 5000,
-    "detach": 3000,
-    "closePane": 2000,
-    "buttonClose": 2000,
-    "shortDelay": 1000,
-    "menuDelay": 500,
-    "checkboxDelay": 300
-  },
-  "scraperConfig": {
-    "scrollStepPx": 918,
-    "passDelayMs": 300,
-    "maxIdlePasses": 6,
-    "totalTimeoutMs": 180000,
-    "maxRetryAttempts": 3,
-    "clickOutsideCoords": { "x": 50, "y": 50 }
-  },
-
   // HTTP-based scraping (for public pages like What's New)
-  "releaseTypeMapping": {
-    "General Availability": "General Availability",
-    "Public preview": "Public Preview",
-    "Deprecated": "Deprecated",
-    "Deprecation": "Deprecated",
-    "Retirement": "Deprecated",
-    "Plan for change": "Plan for Change"
+  "httpScraping": {
+    "whatsNew": "https://learn.microsoft.com/en-us/entra/fundamentals/whats-new",
+    "microsoftLearnBase": "https://learn.microsoft.com",
+    "saveToFile": false,
+    "releaseTypeMapping": {
+      "General Availability": "General Availability",
+      "Public preview": "Public Preview",
+      "Deprecated": "Deprecated",
+      "Deprecation": "Deprecated",
+      "Retirement": "Deprecated",
+      "Plan for change": "Plan for Change"
+    },
+    "sharepointList": {
+      "whatsNew": {
+        "name": "WhatsNew",
+        "dateField": "Date",
+        "mapping": {
+          "Title": "title",
+          "Release_x0020_Type": "releaseType",
+          "Type": "type",
+          "Service_x0020_Category": "serviceCategory",
+          "Product_x0020_Capability": "productCapability",
+          "Detail": "detail",
+          "Link": "link",
+          "Date": "date"
+        }
+      }
+    }
   }
 }

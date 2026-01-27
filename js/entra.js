@@ -32,8 +32,8 @@ function saveToFile(filename, data, timestamp) {
     await initializeConfiguration();
     resetCaches();
 
-    const { config, dateFilter, accessToken } = getConfiguration();
-    const saveToFileEnabled = config?.saveToFile !== false;
+    const { config, accessToken } = getConfiguration();
+    const dateFilter = config.browserScraping.dateFilter;
 
     // Generate timestamp for file names
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
@@ -43,31 +43,31 @@ function saveToFile(filename, data, timestamp) {
 
     // Process Roadmap data
     if (roadmap) {
-      if (saveToFileEnabled) {
+      if (config.browserScraping.roadmap.saveToFile) {
         saveToFile('roadmap', roadmap, timestamp);
       }
       
-      const roadmapListName = config?.lists?.roadmap?.name || config?.lists?.roadmap || 'EntraRoadmapItems';
+      const roadmapListName = config.browserScraping.roadmap.sharepointList.name;
       await insertIntoSharePointList(roadmapListName, roadmap, accessToken, config);
     }
 
     // Process Change Announcements data
     if (changeAnnouncements) {
-      if (saveToFileEnabled) {
+      if (config.browserScraping.changeAnnouncements.saveToFile) {
         saveToFile('change-announcements', changeAnnouncements, timestamp);
       }
       
-      const changeAnnouncementsListName = config?.lists?.changeAnnouncements?.name || config?.lists?.changeAnnouncements || 'EntraChangeAnnouncements';
+      const changeAnnouncementsListName = config.browserScraping.changeAnnouncements.sharepointList.name;
       await insertIntoSharePointList(changeAnnouncementsListName, changeAnnouncements, accessToken, config);
     }
 
     // Process What's New data
     if (whatsNew) {
-      if (saveToFileEnabled) {
+      if (config.httpScraping.saveToFile) {
         saveToFile('whats-new', whatsNew, timestamp);
       }
       
-      const whatsNewListName = config?.lists?.whatsNew?.name || config?.lists?.whatsNew || 'EntraWhatsNew';
+      const whatsNewListName = config.httpScraping.sharepointList.whatsNew.name;
       await insertIntoSharePointList(whatsNewListName, whatsNew, accessToken, config);
     }
 

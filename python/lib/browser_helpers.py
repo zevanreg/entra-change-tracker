@@ -21,48 +21,50 @@ except Exception as err:
 
 # ==================== CONSTANTS ====================
 
+browser_config = config['browserScraping']
+
 TIMEOUTS = {
-    'SPLASH_SCREEN': config['timeouts']['splashScreen'],
-    'PROGRESS_DOTS': config['timeouts']['progressDots'],
-    'GENERAL_WAIT': config['timeouts']['generalWait'],
-    'CLICK': config['timeouts']['click'],
-    'DETACH': config['timeouts']['detach'],
-    'CLOSE_PANE': config['timeouts']['closePane'],
-    'BUTTON_CLOSE': config['timeouts']['buttonClose'],
-    'SHORT_DELAY': config['timeouts']['shortDelay'],
-    'MENU_DELAY': config['timeouts']['menuDelay'],
-    'CHECKBOX_DELAY': config['timeouts']['checkboxDelay']
+    'SPLASH_SCREEN': browser_config['timeouts']['splashScreen'],
+    'PROGRESS_DOTS': browser_config['timeouts']['progressDots'],
+    'GENERAL_WAIT': browser_config['timeouts']['generalWait'],
+    'CLICK': browser_config['timeouts']['click'],
+    'DETACH': browser_config['timeouts']['detach'],
+    'CLOSE_PANE': browser_config['timeouts']['closePane'],
+    'BUTTON_CLOSE': browser_config['timeouts']['buttonClose'],
+    'SHORT_DELAY': browser_config['timeouts']['shortDelay'],
+    'MENU_DELAY': browser_config['timeouts']['menuDelay'],
+    'CHECKBOX_DELAY': browser_config['timeouts']['checkboxDelay']
 }
 
 SELECTORS = {
-    'SPLASH_SCREEN': config['selectors']['splashScreen'],
-    'DETAILS_IFRAME': config['selectors']['detailsIframe'],
-    'DETAILS_ROW': config['selectors']['detailsRow'],
-    'DETAILS_ROW_CHECK': config['selectors']['detailsRowCheck'],
-    'DETAILS_ROW_FIELDS': config['selectors']['detailsRowFields'],
-    'DETAILS_ROW_CELL': config['selectors']['detailsRowCell'],
-    'PROGRESS_DOTS': config['selectors']['progressDots'],
-    'CLOSE_BUTTON': config['selectors']['closeButton'],
-    'SCROLLABLE_CONTAINER': config['selectors']['scrollableContainer'],
-    'FILTER_BUTTON_CONTAINER': config['selectors']['filterButtonContainer'],
-    'APPLY_BUTTON': config['selectors']['applyButton'],
-    'RADIO_LABEL': config['selectors']['radioLabel']
+    'SPLASH_SCREEN': browser_config['selectors']['splashScreen'],
+    'DETAILS_IFRAME': browser_config['selectors']['detailsIframe'],
+    'DETAILS_ROW': browser_config['selectors']['detailsRow'],
+    'DETAILS_ROW_CHECK': browser_config['selectors']['detailsRowCheck'],
+    'DETAILS_ROW_FIELDS': browser_config['selectors']['detailsRowFields'],
+    'DETAILS_ROW_CELL': browser_config['selectors']['detailsRowCell'],
+    'PROGRESS_DOTS': browser_config['selectors']['progressDots'],
+    'CLOSE_BUTTON': browser_config['selectors']['closeButton'],
+    'SCROLLABLE_CONTAINER': browser_config['selectors']['scrollableContainer'],
+    'FILTER_BUTTON_CONTAINER': browser_config['selectors']['filterButtonContainer'],
+    'APPLY_BUTTON': browser_config['selectors']['applyButton'],
+    'RADIO_LABEL': browser_config['selectors']['radioLabel']
 }
 
 SCRAPER_CONFIG = {
-    'SCROLL_STEP_PX': config['scraperConfig']['scrollStepPx'],
-    'PASS_DELAY_MS': config['scraperConfig']['passDelayMs'],
-    'MAX_IDLE_PASSES': config['scraperConfig']['maxIdlePasses'],
-    'TOTAL_TIMEOUT_MS': config['scraperConfig']['totalTimeoutMs'],
-    'MAX_RETRY_ATTEMPTS': config['scraperConfig']['maxRetryAttempts'],
-    'CLICK_OUTSIDE_COORDS': config['scraperConfig']['clickOutsideCoords']
+    'SCROLL_STEP_PX': browser_config['scraperConfig']['scrollStepPx'],
+    'PASS_DELAY_MS': browser_config['scraperConfig']['passDelayMs'],
+    'MAX_IDLE_PASSES': browser_config['scraperConfig']['maxIdlePasses'],
+    'TOTAL_TIMEOUT_MS': browser_config['scraperConfig']['totalTimeoutMs'],
+    'MAX_RETRY_ATTEMPTS': browser_config['scraperConfig']['maxRetryAttempts'],
+    'CLICK_OUTSIDE_COORDS': browser_config['scraperConfig']['clickOutsideCoords']
 }
 
 TEXT_PATTERNS = {
-    'OVERVIEW': config['textPatterns']['overview'],
-    'NEXT_STEPS': config['textPatterns']['nextSteps'],
-    'WHAT_IS_CHANGING': config['textPatterns']['whatIsChanging'],
-    'ROADMAP_DESCRIPTION': config['textPatterns']['roadmapDescription']
+    'OVERVIEW': browser_config['textPatterns']['overview'],
+    'NEXT_STEPS': browser_config['textPatterns']['nextSteps'],
+    'WHAT_IS_CHANGING': browser_config['textPatterns']['whatIsChanging'],
+    'ROADMAP_DESCRIPTION': browser_config['textPatterns']['roadmapDescription']
 }
 
 

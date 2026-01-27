@@ -138,12 +138,13 @@ async function initializeConfiguration() {
     const loadedConfig = JSON.parse(configContent);
 
     // Validate and set date filter
-    if (loadedConfig.dateFilter) {
-      if (validDateFilters.includes(loadedConfig.dateFilter)) {
-        dateFilter = loadedConfig.dateFilter;
+    const configDateFilter = loadedConfig.browserScraping?.dateFilter;
+    if (configDateFilter) {
+      if (validDateFilters.includes(configDateFilter)) {
+        dateFilter = configDateFilter;
         console.log(`📅 Using date filter from config: ${dateFilter}`);
       } else {
-        console.error(`❌ Invalid date filter in config: "${loadedConfig.dateFilter}"`);
+        console.error(`❌ Invalid date filter in config: "${configDateFilter}"`);
         console.error(`   Valid options: ${validDateFilters.join(", ")}`);
         process.exit(1);
       }
@@ -152,20 +153,21 @@ async function initializeConfiguration() {
     }
 
     // Determine authentication method
-    const authMethod = (loadedConfig.authMethod || "devicecode").toLowerCase();
+    const authMethod = (loadedConfig.sharepoint?.authentication?.authMethod || "devicecode").toLowerCase();
     
-    if (loadedConfig.siteUrl) {
+    if (loadedConfig.sharepoint?.siteUrl) {
       if (authMethod === "iwa" || authMethod === "default") {
         console.log("🔑 Acquiring Graph access token via DefaultAzureCredential (IWA)...");
-        accessToken = await getGraphAccessTokenWithIWA(loadedConfig);
+        accessToken = await getGraphAccessTokenWithIWA(loadedConfig.sharepoint.authentication);
         console.log("✅ Access token acquired successfully");
       } else if (authMethod === "devicecode") {
-        if (!loadedConfig.clientId || !loadedConfig.tenantId) {
+        const deviceCodeConfig = loadedConfig.sharepoint.authentication.devicecode;
+        if (!deviceCodeConfig?.clientId || !deviceCodeConfig?.tenantId) {
           console.error("❌ clientId and tenantId are required for device code flow");
           process.exit(1);
         }
         console.log("🔑 Acquiring Graph access token via device code flow...");
-        accessToken = await getGraphAccessTokenWithDeviceCode(loadedConfig);
+        accessToken = await getGraphAccessTokenWithDeviceCode(deviceCodeConfig);
         console.log("✅ Access token acquired successfully");
       } else {
         console.error(`❌ Invalid authMethod: "${authMethod}". Valid options: 'devicecode', 'iwa', 'default'`);

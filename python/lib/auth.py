@@ -147,31 +147,35 @@ def initialize_configuration() -> None:
             loadedConfig = json.load(f)
         
         # Validate and set date filter
-        if loadedConfig.get('dateFilter'):
-            if loadedConfig['dateFilter'] in VALID_DATE_FILTERS:
-                _date_filter = loadedConfig['dateFilter']
+        config_date_filter = loadedConfig.get('browserScraping', {}).get('dateFilter')
+        if config_date_filter:
+            if config_date_filter in VALID_DATE_FILTERS:
+                _date_filter = config_date_filter
                 print(f"📅 Using date filter from config: {_date_filter}")
             else:
-                print(f"❌ Invalid date filter in config: \"{loadedConfig['dateFilter']}\"")
+                print(f"❌ Invalid date filter in config: \"{config_date_filter}\"")
                 print(f"   Valid options: {', '.join(VALID_DATE_FILTERS)}")
                 exit(1)
         else:
             print("📅 No date filter specified in config, showing all results")
         
         # Determine authentication method
-        auth_method = (loadedConfig.get('authMethod') or 'devicecode').lower()
+        sharepoint_config = loadedConfig.get('sharepoint', {})
+        auth_config = sharepoint_config.get('authentication', {})
+        auth_method = (auth_config.get('authMethod') or 'devicecode').lower()
         
-        if loadedConfig.get('siteUrl'):
+        if sharepoint_config.get('siteUrl'):
             if auth_method in ['iwa', 'default']:
                 print("🔑 Acquiring Graph access token via DefaultAzureCredential (IWA)...")
-                _access_token = get_graph_access_token_with_iwa(loadedConfig)
+                _access_token = get_graph_access_token_with_iwa(auth_config)
                 print("✅ Access token acquired successfully")
             elif auth_method == 'devicecode':
-                if not loadedConfig.get('clientId') or not loadedConfig.get('tenantId'):
+                device_code_config = auth_config.get('devicecode', {})
+                if not device_code_config.get('clientId') or not device_code_config.get('tenantId'):
                     print("❌ clientId and tenantId are required for device code flow")
                     exit(1)
                 print("🔑 Acquiring Graph access token via device code flow...")
-                _access_token = get_graph_access_token_with_device_code(loadedConfig)
+                _access_token = get_graph_access_token_with_device_code(device_code_config)
                 print("✅ Access token acquired successfully")
             else:
                 print(f"❌ Invalid authMethod: \"{auth_method}\". Valid options: 'devicecode', 'iwa', 'default'")

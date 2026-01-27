@@ -37,12 +37,9 @@ async def main():
         reset_caches()
         
         app_config = get_configuration()
-        config = app_config['config'] if 'config' in app_config else app_config.get('sharepointConfig')
-        date_filter = app_config['dateFilter']
+        config = app_config['config'] if 'config' in app_config else app_config['sharepointConfig']
+        date_filter = config['browserScraping']['dateFilter']
         access_token = app_config['accessToken']
-        save_to_file_enabled = False
-        if config and 'saveToFile' in config:
-            save_to_file_enabled = bool(config['saveToFile'])
         
         # Generate timestamp for file names
         timestamp = datetime.now().isoformat().replace(':', '-').replace('.', '-')[:19]
@@ -55,25 +52,25 @@ async def main():
         
         # Process Roadmap data
         if roadmap:
-            if save_to_file_enabled:
+            if config['browserScraping']['roadmap']['saveToFile']:
                 save_to_file('roadmap', roadmap, timestamp)
             
-            roadmap_list_name = 'EntraRoadmapItems'
-            if config and config.get('lists', {}).get('roadmap'):
-                roadmap_entry = config['lists']['roadmap']
-                roadmap_list_name = roadmap_entry.get('name') if isinstance(roadmap_entry, dict) else roadmap_entry
+            browser_scraping = config['browserScraping']
+            roadmap_config = browser_scraping['roadmap']
+            sharepoint_list = roadmap_config['sharepointList']
+            roadmap_list_name = sharepoint_list['name']
             
             insert_into_sharepoint_list(roadmap_list_name, roadmap, access_token, config)
         
         # Process Change Announcements data
         if change_announcements:
-            if save_to_file_enabled:
+            if config['browserScraping']['changeAnnouncements']['saveToFile']:
                 save_to_file('change-announcements', change_announcements, timestamp)
             
-            change_announcements_list_name = 'EntraChangeAnnouncements'
-            if config and config.get('lists', {}).get('changeAnnouncements'):
-                change_entry = config['lists']['changeAnnouncements']
-                change_announcements_list_name = change_entry.get('name') if isinstance(change_entry, dict) else change_entry
+            browser_scraping = config['browserScraping']
+            change_config = browser_scraping['changeAnnouncements']
+            sharepoint_list = change_config['sharepointList']
+            change_announcements_list_name = sharepoint_list['name']
             
             insert_into_sharepoint_list(
                 change_announcements_list_name,
@@ -84,13 +81,13 @@ async def main():
         
         # Process What's New data
         if whats_new:
-            if save_to_file_enabled:
+            if config['httpScraping']['saveToFile']:
                 save_to_file('whats-new', whats_new, timestamp)
             
-            whats_new_list_name = 'EntraWhatsNew'
-            if config and config.get('lists', {}).get('whatsNew'):
-                whats_new_entry = config['lists']['whatsNew']
-                whats_new_list_name = whats_new_entry.get('name') if isinstance(whats_new_entry, dict) else whats_new_entry
+            http_scraping = config['httpScraping']
+            sharepoint_lists = http_scraping['sharepointList']
+            whats_new_config = sharepoint_lists['whatsNew']
+            whats_new_list_name = whats_new_config['name']
             
             insert_into_sharepoint_list(
                 whats_new_list_name,

@@ -195,20 +195,34 @@ def map_scraped_item_to_sharepoint_fields(
     Returns:
         Mapped fields
     """
-    list_entries = config.get('lists', {}) if config else {}
+    # Collect lists from both browserScraping and httpScraping sections
+    list_entries = {}
+    if config:
+        browser_scraping = config['browserScraping']
+        if 'roadmap' in browser_scraping:
+            list_entries['roadmap'] = browser_scraping['roadmap']
+        if 'changeAnnouncements' in browser_scraping:
+            list_entries['changeAnnouncements'] = browser_scraping['changeAnnouncements']
+        
+        http_scraping = config['httpScraping']
+        sharepoint_lists = http_scraping['sharepointList']
+        if 'whatsNew' in sharepoint_lists:
+            list_entries['whatsNew'] = sharepoint_lists['whatsNew']
+    
     list_key = None
     for key, entry in list_entries.items():
-        name = entry.get('name') if isinstance(entry, dict) else None
-        if name and name.lower() == list_name.lower():
+        sharepoint_list = entry['sharepointList'] if key != 'whatsNew' else entry
+        name = sharepoint_list['name']
+        if name.lower() == list_name.lower():
             list_key = key
             break
 
-    # Get mapping from combined list config or legacy sharePointFieldMappings
+    # Get mapping from list config
     mapping = None
-    if list_key:
-        mapping = list_entries.get(list_key, {}).get('mapping')
-    if not mapping:
-        mapping = config.get('sharePointFieldMappings', {}).get(list_name.lower())
+    if list_key and list_key in list_entries:
+        entry = list_entries[list_key]
+        sharepoint_list = entry['sharepointList'] if key != 'whatsNew' else entry
+        mapping = sharepoint_list['mapping']
     
     if not mapping:
         raise RuntimeError(
@@ -222,7 +236,7 @@ def map_scraped_item_to_sharepoint_fields(
         fields[sp_internal_name] = item.get(source_key, '')
     
     # Ensure Title exists if possible
-    if not fields.get('Title') and item.get('title'):
+    if 'Title' not in fields and 'title' in item:
         fields['Title'] = item['title']
     
     return fields
@@ -250,24 +264,32 @@ def insert_into_sharepoint_list(
     try:
         print(f"📤 Inserting {len(data)} items into SharePoint list (Graph): {list_name}")
         
-        site_id = get_site_id_from_site_url(access_token, sharepoint_config['siteUrl'])
+        site_id = get_site_id_from_site_url(access_token, sharepoint_config['sharepoint']['siteUrl'])
         list_id = get_list_id_by_title(access_token, site_id, list_name)
         
-        # Determine the date field name based on list config or list name
+        # Determine the date field name based on list config
         list_name_lower = list_name.lower()
         date_field = None
-        list_entries = sharepoint_config.get('lists', {}) if sharepoint_config else {}
+        
+        # Collect lists from browserScraping and httpScraping
+        list_entries = {}
+        browser_scraping = sharepoint_config['browserScraping']
+        if 'roadmap' in browser_scraping:
+            list_entries['roadmap'] = browser_scraping['roadmap']
+        if 'changeAnnouncements' in browser_scraping:
+            list_entries['changeAnnouncements'] = browser_scraping['changeAnnouncements']
+        
+        http_scraping = sharepoint_config['httpScraping']
+        sharepoint_lists = http_scraping['sharepointList']
+        if 'whatsNew' in sharepoint_lists:
+            list_entries['whatsNew'] = sharepoint_lists['whatsNew']
+        
         for key, entry in list_entries.items():
-            name = entry.get('name') if isinstance(entry, dict) else None
-            if name and name.lower() == list_name_lower:
-                date_field = entry.get('dateField')
+            sharepoint_list = entry['sharepointList'] if key != 'whatsNew' else entry
+            name = sharepoint_list['name']
+            if name.lower() == list_name_lower:
+                date_field = sharepoint_list['dateField']
                 break
-
-        if not date_field:
-            if 'roadmap' in list_name_lower:
-                date_field = 'ReleaseDate'
-            elif 'change' in list_name_lower or 'announcement' in list_name_lower:
-                date_field = 'AnnouncementDate'
         
         success_count = 0
         error_count = 0
@@ -278,11 +300,11 @@ def insert_into_sharepoint_list(
                 fields = map_scraped_item_to_sharepoint_fields(list_name, item, sharepoint_config)
                 
                 # Title is required for most lists; enforce minimal safety
-                if not fields.get('Title'):
+                if 'Title' not in fields:
                     fields['Title'] = item.get('title', f'Item {i + 1}')
                 
                 # Check if item already exists (if date field is available)
-                if date_field and fields.get(date_field):
+                if date_field and date_field in fields:
                     exists = item_exists(
                         access_token,
                         site_id,

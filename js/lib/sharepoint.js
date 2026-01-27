@@ -129,15 +129,34 @@ async function itemExists(token, siteId, listId, title, dateField, dateValue) {
  * @returns {object} Mapped fields
  */
 function mapScrapedItemToSharePointFields(listName, item, config) {
-  const listEntries = config?.lists || {};
-  const listKey = Object.keys(listEntries).find(
-    (key) => listEntries[key]?.name?.toLowerCase?.() === listName.toLowerCase()
-  );
+  // Collect lists from both browserScraping and httpScraping sections
+  const listEntries = {};
+  if (config) {
+    const browserScraping = config.browserScraping;
+    if (browserScraping.roadmap) {
+      listEntries.roadmap = browserScraping.roadmap;
+    }
+    if (browserScraping.changeAnnouncements) {
+      listEntries.changeAnnouncements = browserScraping.changeAnnouncements;
+    }
+    
+    const httpScraping = config.httpScraping;
+    const sharepointLists = httpScraping.sharepointList;
+    if (sharepointLists.whatsNew) {
+      listEntries.whatsNew = sharepointLists.whatsNew;
+    }
+  }
+  
+  const listKey = Object.keys(listEntries).find((key) => {
+    const entry = listEntries[key];
+    const sharepointList = key === 'whatsNew' ? entry : entry.sharepointList;
+    return sharepointList.name.toLowerCase() === listName.toLowerCase();
+  });
 
-  // Get mapping from combined list config or legacy sharePointFieldMappings
-  const mapping = listKey
-    ? listEntries[listKey]?.mapping
-    : config?.sharePointFieldMappings?.[listName.toLowerCase()];
+  // Get mapping from list config
+  const entry = listEntries[listKey];
+  const sharepointList = listKey === 'whatsNew' ? entry : entry.sharepointList;
+  const mapping = sharepointList.mapping;
   
   if (!mapping) {
     throw new Error(
@@ -177,22 +196,39 @@ async function insertIntoSharePointList(listName, data, accessToken, config) {
   try {
     console.log(`📤 Inserting ${data.length} items into SharePoint list (Graph): ${listName}`);
 
-    const siteId = await getSiteIdFromSiteUrl(accessToken, config.siteUrl);
+    const siteId = await getSiteIdFromSiteUrl(accessToken, config.sharepoint.siteUrl);
     const listId = await getListIdByTitle(accessToken, siteId, listName);
 
-    // Determine the date field name based on list config or list name
+    // Determine the date field name based on list config
     const listNameLower = listName.toLowerCase();
-    const listEntries = config?.lists || {};
-    const listKey = Object.keys(listEntries).find(
-      (key) => listEntries[key]?.name?.toLowerCase?.() === listNameLower
-    );
-    let dateField = listKey ? listEntries[listKey]?.dateField : null;
-    if (!dateField) {
-      if (listNameLower.includes('roadmap')) {
-        dateField = 'ReleaseDate';
-      } else if (listNameLower.includes('change') || listNameLower.includes('announcement')) {
-        dateField = 'AnnouncementDate';
-      }
+    
+    // Collect lists from browserScraping and httpScraping
+    const listEntries = {};
+    const browserScraping = config.browserScraping;
+    if (browserScraping.roadmap) {
+      listEntries.roadmap = browserScraping.roadmap;
+    }
+    if (browserScraping.changeAnnouncements) {
+      listEntries.changeAnnouncements = browserScraping.changeAnnouncements;
+    }
+    
+    const httpScraping = config.httpScraping;
+    const sharepointLists = httpScraping.sharepointList;
+    if (sharepointLists.whatsNew) {
+      listEntries.whatsNew = sharepointLists.whatsNew;
+    }
+    
+    const listKey = Object.keys(listEntries).find((key) => {
+      const entry = listEntries[key];
+      const sharepointList = key === 'whatsNew' ? entry : entry.sharepointList;
+      return sharepointList.name.toLowerCase() === listNameLower;
+    });
+    
+    let dateField = null;
+    if (listKey) {
+      const entry = listEntries[listKey];
+      const sharepointList = listKey === 'whatsNew' ? entry : entry.sharepointList;
+      dateField = sharepointList.dateField;
     }
 
     let successCount = 0;
@@ -205,7 +241,7 @@ async function insertIntoSharePointList(listName, data, accessToken, config) {
 
         // Title is required for most lists; enforce minimal safety
         if (!fields.Title) {
-          fields.Title = data[i]?.title || `Item ${i + 1}`;
+          fields.Title = data[i].title || `Item ${i + 1}`;
         }
 
         // Check if item already exists (if date field is available)

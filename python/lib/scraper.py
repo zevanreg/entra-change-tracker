@@ -31,8 +31,9 @@ def extract_release_type_from_title(title: str) -> tuple[str, str]:
     Returns:
         Tuple of (release_type, cleaned_title)
     """
-    config = get_configuration().get('config', {})
-    release_type_mapping = config.get('releaseTypeMapping', {})
+    config = get_configuration()['config']
+    http_scraping = config['httpScraping']
+    release_type_mapping = http_scraping['releaseTypeMapping']
     
     # Check if title starts with any known release type (case-insensitive)
     title_lower = title.lower()
@@ -107,8 +108,9 @@ def scrape_whats_new_page() -> Optional[List[Dict[str, Any]]]:
         List of items with Release Type, Title, Type, Service Category, 
         Product Capability, Detail, Link, Date
     """
-    config = get_configuration().get('config', {})
-    url = config.get('urls', {}).get('whatsNew', "https://learn.microsoft.com/en-us/entra/fundamentals/whats-new")
+    config = get_configuration()['config']
+    http_scraping = config['httpScraping']
+    url = http_scraping['whatsNew']
     
     try:
         print(f"🌐 Fetching {url}...")
@@ -174,8 +176,9 @@ def extract_whats_new_item(h3_element, month_text: str) -> Optional[Dict[str, An
             full_title = title_link.get_text(strip=True)
             item['link'] = title_link.get('href', '')
             if item['link'] and not item['link'].startswith('http'):
-                config = get_configuration().get('config', {})
-                base_url = config.get('urls', {}).get('microsoftLearnBase', 'https://learn.microsoft.com')
+                config = get_configuration()['config']
+                http_scraping = config['httpScraping']
+                base_url = http_scraping['microsoftLearnBase']
                 item['link'] = f"{base_url}{item['link']}"
         else:
             full_title = h3_element.get_text(strip=True)
@@ -256,8 +259,9 @@ async def scrape_entra_portal(
     Returns:
         Dictionary with roadmap and changeAnnouncements data
     """
-    config = get_configuration().get('config', {})
-    entra_url = config.get('urls', {}).get('entraPortal', "https://entra.microsoft.com/#blade/Microsoft_AAD_IAM/ChangeManagementHubList.ReactView")
+    config = get_configuration()['config']
+    browser_scraping = config['browserScraping']
+    entra_url = browser_scraping['entraPortal']
     
     async with async_playwright() as playwright:
         profile_dir = Path(__file__).resolve().parent.parent / "edge-profile"
@@ -308,15 +312,15 @@ async def scrape_entra_portal(
                 pass
 
             # Get config for extract_details settings
-            config_obj = get_configuration().get('config', {})
-            lists_config = config_obj.get('lists', {})
+            config_obj = get_configuration()['config']
+            browser_scraping_config = config_obj['browserScraping']
 
             # Scrape Roadmap
-            roadmap_extract_details = lists_config.get('roadmap', {}).get('extractDetails', True)
+            roadmap_extract_details = browser_scraping_config['roadmap']['extractDetails']
             roadmap = await scrape_tab(page, frame, '/^Roadmap$/i', date_filter, roadmap_extract_details)
 
             # Scrape Change Announcements
-            change_announcements_extract_details = lists_config.get('changeAnnouncements', {}).get('extractDetails', True)
+            change_announcements_extract_details = browser_scraping_config['changeAnnouncements']['extractDetails']
             change_announcements = await scrape_tab(page, frame, '/^Change announcements$/i', date_filter, change_announcements_extract_details)
 
             return {

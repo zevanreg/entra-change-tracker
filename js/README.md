@@ -24,46 +24,6 @@ Automated web scraping tool for extracting Microsoft Entra (Azure AD) roadmap it
 
 ```bash
 cd c:\repos\entra-change-tracker\js
-   {
-     "siteUrl": "https://yourtenant.sharepoint.com/sites/yoursite",
-     "clientId": "your-app-client-id",
-     "tenantId": "your-tenant-id",
-     "dateFilter": "Last 3 months",
-     "saveToFile": false,
-     "lists": {
-       "roadmap": {
-         "name": "EntraRoadmapItems",
-         "dateField": "ReleaseDate",
-         "mapping": {
-           "Title": "title",
-           "Category": "changeEntityCategory",
-           "Service": "changeEntityService",
-           "ReleaseType": "changeEntityDeliveryStage",
-           "ReleaseDate": "publishStartDateTime",
-           "State": "changeEntityState",
-           "Overview": "overview",
-           "Description": "description",
-           "Url": "url"
-         }
-       },
-       "changeAnnouncements": {
-         "name": "EntraChangeAnnouncements",
-         "dateField": "AnnouncementDate",
-         "mapping": {
-           "Title": "title",
-           "Service": "changeEntityService",
-           "ChangeType": "changeEntityChangeType",
-           "AnnouncementDate": "announcementDateTime",
-           "TargetDate": "targetDateTime",
-           "ActionRequired": "isCustomerActionRequired",
-           "Tags": "marketingThemes",
-           "Overview": "overview",
-           "Description": "description",
-           "Url": "url"
-         }
-       }
-     }
-   }
 - `@azure/msal-node-extensions` - Token cache support
 
 ### 3. Install Playwright browsers (if needed)
@@ -83,67 +43,129 @@ If you want to sync data to SharePoint:
   copy config.json.template config.json
   ```
 
-2. **Create an Azure AD App Registration:**
+2. **Create an Azure AD App Registration** (for device code flow):
    - Go to [Azure Portal](https://portal.azure.com) → Azure Active Directory → App registrations
    - Create a new registration
-   - Note the **Application (client) ID**
+   - Note the **Application (client) ID** and **Tenant ID**
    - Enable **Allow public client flows** (Authentication → Advanced settings)
    - Grant **Microsoft Graph API permissions**: `Sites.ReadWrite.All`
    - Admin consent may be required
 
-3. **Edit `config.json`:**
-   ```json
-   {
-     "siteUrl": "https://yourtenant.sharepoint.com/sites/yoursite",
-     "clientId": "your-app-client-id",
-     "tenantId": "your-tenant-id",
-     "authMethod": "devicecode",
-     "dateFilter": "Last 3 months",
-     "saveToFile": false,
-     "lists": {
-       "roadmap": "Roadmap",
-       "changeAnnouncements": "ChangeAnnouncements"
-     }
-   }
-   ```
+3. **Edit `config.json`** - See Configuration Reference below for all settings
+4. **Create SharePoint lists** with required columns (see Configuration Reference below)
 
-### Authentication Methods
+## Configuration Reference
 
-The tool supports two authentication methods for Microsoft Graph API:
+The `config.json` file uses a hierarchical structure organized into three main sections:
 
-1. **Device Code Flow** (`"devicecode"`) - Default
-   - Requires user interaction via browser
-   - Requires `clientId` and `tenantId` in config
-   - Best for first-time setup or when working across different accounts
-   - Token is cached for reuse
+### Structure Overview
 
-2. **Integrated Windows Authentication** (`"iwa"` or `"default"`)
-   - Uses current Windows user credentials automatically
-   - No browser interaction required
-   - Requires user to be signed into Windows with their Microsoft account
-   - Only `tenantId` is required (optional for single-tenant scenarios)
-   - Falls back to other methods (Azure CLI, VS Code, etc.) if IWA unavailable
+```json
+{
+  "sharepoint": { /* SharePoint and authentication settings */ },
+  "browserScraping": { /* Entra Portal scraping configuration */ },
+  "httpScraping": { /* What's New public page scraping */ }
+}
+```
 
-Set `authMethod` in `config.json` to `"devicecode"` or `"iwa"`.
+### SharePoint Section
 
-4. **Create SharePoint lists** with these columns:
-   - **Roadmap**: Title, Category, Service, ReleaseType, ReleaseDate, State, URL, Description
-   - **ChangeAnnouncements**: Title, Category, Service, ReleaseType, ReleaseDate, State, URL, Description
+Configures SharePoint site connection and authentication:
 
-### Date Filter Options
+```json
+"sharepoint": {
+  "siteUrl": "https://yourtenant.sharepoint.com/sites/yoursite",
+  "authentication": {
+    "authMethod": "devicecode",
+    "devicecode": {
+      "clientId": "your-app-client-id",
+      "tenantId": "your-tenant-id"
+    }
+  }
+}
+```
 
-Valid values for `dateFilter` in config:
-- `"Last 1 month"`
-- `"Last 3 months"`
-- `"Last 6 months"`
-- `"Last 1 year"`
-- `""` (empty for all results visible by default)
+**Settings:**
+- `siteUrl` (string, required): Full URL to your SharePoint site
+- `authentication.authMethod` (string): Authentication method - `"devicecode"` or `"iwa"` (Integrated Windows Authentication)
+- `authentication.devicecode.clientId` (string): Azure AD app client ID (required for device code flow)
+- `authentication.devicecode.tenantId` (string): Azure AD tenant ID (required for device code flow)
 
-### File Output
+**Authentication Methods:**
+- **Device Code Flow** (`"devicecode"`): Interactive browser-based authentication, requires app registration
+- **Integrated Windows Authentication** (`"iwa"`): Uses current Windows credentials, no app registration needed
 
-Control local JSON output with `saveToFile` in config:
-- `true` (default) saves timestamped JSON files
-- `false` skips saving local files
+### Browser Scraping Section
+
+Configures Playwright-based scraping of the Entra Portal:
+
+```json
+"browserScraping": {
+  "entraPortal": "https://entra.microsoft.com/",
+  "dateFilter": "Last 3 months",
+  "selectors": { /* CSS selectors */ },
+  "timeouts": { /* Timeout values */ },
+  "scraperConfig": { /* Scraping behavior */ },
+  "textPatterns": { /* Text matching patterns */ },
+  "roadmap": {
+    "saveToFile": false,
+    "extractDetails": true,
+    "sharepointList": { /* List configuration */ }
+  },
+  "changeAnnouncements": { /* Same structure as roadmap */ }
+}
+```
+
+**General Settings:**
+- `entraPortal` (string): Entra portal URL
+- `dateFilter` (string): Date range filter - `"Last 1 month"`, `"Last 3 months"`, `"Last 6 months"`, `"Last 1 year"`, or `""` (all)
+- `selectors` (object): CSS selectors for page elements (see template for details)
+- `timeouts` (object): Timeout values in milliseconds for various operations
+- `scraperConfig` (object): Scraping behavior settings (delays, retries, etc.)
+- `textPatterns` (object): Regular expressions for text matching
+
+**Per-Source Settings (roadmap, changeAnnouncements):**
+- `saveToFile` (boolean): Whether to save data as timestamped JSON file
+- `extractDetails` (boolean): Whether to click into each item for full details (slower but more complete)
+- `sharepointList.name` (string): SharePoint list name
+- `sharepointList.dateField` (string): Field name for date column
+- `sharepointList.mapping` (object): Maps SharePoint columns to data fields
+
+**Required SharePoint List Columns:**
+- **Roadmap**: Title, Category, Service, ReleaseType, ReleaseDate, State, Overview, Description, Url
+- **Change Announcements**: Title, Service, ChangeType, AnnouncementDate, TargetDate, ActionRequired, Tags, Overview, Description, Url
+
+### HTTP Scraping Section
+
+Configures HTTP-based scraping of the public What's New page:
+
+```json
+"httpScraping": {
+  "whatsNew": "https://learn.microsoft.com/en-us/entra/fundamentals/whats-new",
+  "microsoftLearnBase": "https://learn.microsoft.com",
+  "saveToFile": false,
+  "releaseTypeMapping": { /* Keyword to release type mapping */ },
+  "sharepointList": {
+    "whatsNew": {
+      "name": "EntraWhatsNew",
+      "dateField": "PublishDate",
+      "mapping": { /* Column mappings */ }
+    }
+  }
+}
+```
+
+**Settings:**
+- `whatsNew` (string): URL to What's New page
+- `microsoftLearnBase` (string): Base URL for resolving relative links
+- `saveToFile` (boolean): Whether to save data as timestamped JSON file
+- `releaseTypeMapping` (object): Maps keywords in titles to release types (e.g., "preview" → "Public Preview")
+- `sharepointList.whatsNew.name` (string): SharePoint list name
+- `sharepointList.whatsNew.dateField` (string): Field name for date column
+- `sharepointList.whatsNew.mapping` (object): Maps SharePoint columns to data fields
+
+**Required SharePoint List Columns:**
+- **What's New**: Title, PublishDate, Category, Url, Description, ReleaseType
 
 ## Usage
 

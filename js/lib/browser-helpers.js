@@ -16,48 +16,50 @@ try {
 
 // ==================== CONSTANTS ====================
 
+const browserConfig = config.browserScraping;
+
 const TIMEOUTS = {
-  SPLASH_SCREEN: config.timeouts.splashScreen,
-  PROGRESS_DOTS: config.timeouts.progressDots,
-  GENERAL_WAIT: config.timeouts.generalWait,
-  CLICK: config.timeouts.click,
-  DETACH: config.timeouts.detach,
-  CLOSE_PANE: config.timeouts.closePane,
-  BUTTON_CLOSE: config.timeouts.buttonClose,
-  SHORT_DELAY: config.timeouts.shortDelay,
-  MENU_DELAY: config.timeouts.menuDelay,
-  CHECKBOX_DELAY: config.timeouts.checkboxDelay
+  SPLASH_SCREEN: browserConfig.timeouts.splashScreen,
+  PROGRESS_DOTS: browserConfig.timeouts.progressDots,
+  GENERAL_WAIT: browserConfig.timeouts.generalWait,
+  CLICK: browserConfig.timeouts.click,
+  DETACH: browserConfig.timeouts.detach,
+  CLOSE_PANE: browserConfig.timeouts.closePane,
+  BUTTON_CLOSE: browserConfig.timeouts.buttonClose,
+  SHORT_DELAY: browserConfig.timeouts.shortDelay,
+  MENU_DELAY: browserConfig.timeouts.menuDelay,
+  CHECKBOX_DELAY: browserConfig.timeouts.checkboxDelay
 };
 
 const SELECTORS = {
-  SPLASH_SCREEN: config.selectors.splashScreen,
-  DETAILS_IFRAME: config.selectors.detailsIframe,
-  DETAILS_ROW: config.selectors.detailsRow,
-  DETAILS_ROW_CHECK: config.selectors.detailsRowCheck,
-  DETAILS_ROW_FIELDS: config.selectors.detailsRowFields,
-  DETAILS_ROW_CELL: config.selectors.detailsRowCell,
-  PROGRESS_DOTS: config.selectors.progressDots,
-  CLOSE_BUTTON: config.selectors.closeButton,
-  SCROLLABLE_CONTAINER: config.selectors.scrollableContainer,
-  FILTER_BUTTON_CONTAINER: config.selectors.filterButtonContainer,
-  APPLY_BUTTON: config.selectors.applyButton,
-  RADIO_LABEL: config.selectors.radioLabel
+  SPLASH_SCREEN: browserConfig.selectors.splashScreen,
+  DETAILS_IFRAME: browserConfig.selectors.detailsIframe,
+  DETAILS_ROW: browserConfig.selectors.detailsRow,
+  DETAILS_ROW_CHECK: browserConfig.selectors.detailsRowCheck,
+  DETAILS_ROW_FIELDS: browserConfig.selectors.detailsRowFields,
+  DETAILS_ROW_CELL: browserConfig.selectors.detailsRowCell,
+  PROGRESS_DOTS: browserConfig.selectors.progressDots,
+  CLOSE_BUTTON: browserConfig.selectors.closeButton,
+  SCROLLABLE_CONTAINER: browserConfig.selectors.scrollableContainer,
+  FILTER_BUTTON_CONTAINER: browserConfig.selectors.filterButtonContainer,
+  APPLY_BUTTON: browserConfig.selectors.applyButton,
+  RADIO_LABEL: browserConfig.selectors.radioLabel
 };
 
 const SCRAPER_CONFIG = {
-  SCROLL_STEP_PX: config.scraperConfig.scrollStepPx,
-  PASS_DELAY_MS: config.scraperConfig.passDelayMs,
-  MAX_IDLE_PASSES: config.scraperConfig.maxIdlePasses,
-  TOTAL_TIMEOUT_MS: config.scraperConfig.totalTimeoutMs,
-  MAX_RETRY_ATTEMPTS: config.scraperConfig.maxRetryAttempts,
-  CLICK_OUTSIDE_COORDS: config.scraperConfig.clickOutsideCoords
+  SCROLL_STEP_PX: browserConfig.scraperConfig.scrollStepPx,
+  PASS_DELAY_MS: browserConfig.scraperConfig.passDelayMs,
+  MAX_IDLE_PASSES: browserConfig.scraperConfig.maxIdlePasses,
+  TOTAL_TIMEOUT_MS: browserConfig.scraperConfig.totalTimeoutMs,
+  MAX_RETRY_ATTEMPTS: browserConfig.scraperConfig.maxRetryAttempts,
+  CLICK_OUTSIDE_COORDS: browserConfig.scraperConfig.clickOutsideCoords
 };
 
 const TEXT_PATTERNS = {
-  OVERVIEW: config.textPatterns.overview,
-  NEXT_STEPS: config.textPatterns.nextSteps,
-  WHAT_IS_CHANGING: config.textPatterns.whatIsChanging,
-  ROADMAP_DESCRIPTION: config.textPatterns.roadmapDescription
+  OVERVIEW: browserConfig.textPatterns.overview,
+  NEXT_STEPS: browserConfig.textPatterns.nextSteps,
+  WHAT_IS_CHANGING: browserConfig.textPatterns.whatIsChanging,
+  ROADMAP_DESCRIPTION: browserConfig.textPatterns.roadmapDescription
 };
 
 // ==================== HELPER FUNCTIONS ====================

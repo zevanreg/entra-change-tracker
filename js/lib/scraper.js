@@ -16,7 +16,7 @@ const { getConfiguration } = require("./auth");
  */
 function extractReleaseTypeFromTitle(title) {
   const { config } = getConfiguration();
-  const releaseTypeMapping = config?.releaseTypeMapping || {};
+  const releaseTypeMapping = config.httpScraping.releaseTypeMapping;
   
   // Check if title starts with any known release type (case-insensitive)
   const titleLower = title.toLowerCase();
@@ -80,7 +80,7 @@ function extractWhatsNewItem(h3Element, monthText, $) {
       item.link = titleLink.attr('href') || '';
       if (item.link && !item.link.startsWith('http')) {
         const { config } = getConfiguration();
-        const baseUrl = config?.urls?.microsoftLearnBase || 'https://learn.microsoft.com';
+        const baseUrl = config.httpScraping.microsoftLearnBase;
         item.link = `${baseUrl}${item.link}`;
       }
     } else {
@@ -157,7 +157,7 @@ function extractWhatsNewItem(h3Element, monthText, $) {
  */
 async function scrapeWhatsNewPage() {
   const { config } = getConfiguration();
-  const url = config?.urls?.whatsNew || "https://learn.microsoft.com/en-us/entra/fundamentals/whats-new";
+  const url = config.httpScraping.whatsNew;
   
   try {
     console.log(`🌐 Fetching ${url}...`);
@@ -215,7 +215,7 @@ async function initializeBrowser() {
   const page = context.pages()[0];
 
   const { config } = getConfiguration();
-  const entraUrl = config?.urls?.entraPortal || "https://entra.microsoft.com/#blade/Microsoft_AAD_IAM/ChangeManagementHubList.ReactView";
+  const entraUrl = config.browserScraping.entraPortal;
 
   // Navigate to Entra portal
   await page.goto(entraUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
@@ -293,11 +293,11 @@ async function scrapeEntraPortal(dateFilter = null) {
     const { config } = getConfiguration();
 
     // Scrape Roadmap
-    const roadmapExtractDetails = config?.lists?.roadmap?.extractDetails ?? true;
+    const roadmapExtractDetails = config.browserScraping.roadmap.extractDetails;
     const roadmap = await scrapeTab(page, frame, /^Roadmap$/i, dateFilter, roadmapExtractDetails);
 
     // Scrape Change Announcements
-    const changeAnnouncementsExtractDetails = config?.lists?.changeAnnouncements?.extractDetails ?? true;
+    const changeAnnouncementsExtractDetails = config.browserScraping.changeAnnouncements.extractDetails;
     const changeAnnouncements = await scrapeTab(page, frame, /^Change announcements$/i, dateFilter, changeAnnouncementsExtractDetails);
 
     return { roadmap, changeAnnouncements };
