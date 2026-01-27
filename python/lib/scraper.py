@@ -247,21 +247,17 @@ def extract_whats_new_item(h3_element, month_text: str) -> Optional[Dict[str, An
         return None
 
 
-async def scrape_entra_portal(
-    date_filter: Optional[str] = None
-) -> Dict[str, Optional[List[Dict[str, Any]]]]:
+async def scrape_entra_portal() -> Dict[str, Optional[List[Dict[str, Any]]]]:
     """
     Scrape Roadmap data from Entra portal.
     
-    Args:
-        date_filter: Optional date filter
-        
     Returns:
         Dictionary with roadmap and changeAnnouncements data
     """
     config = get_config()
     browser_scraping = config['browserScraping']
     entra_url = browser_scraping['entraPortal']
+    date_filter = browser_scraping.get('dateFilter')
     
     async with async_playwright() as playwright:
         profile_dir = Path(__file__).resolve().parent.parent / "edge-profile"
@@ -332,20 +328,15 @@ async def scrape_entra_portal(
             print('✅ Browser closed.')
 
 
-async def scrape_all_sources(
-    date_filter: Optional[str] = None
-) -> Dict[str, Optional[List[Dict[str, Any]]]]:
+async def scrape_all_sources() -> Dict[str, Optional[List[Dict[str, Any]]]]:
     """
     Scrape data from all sources: Entra portal and Microsoft Learn What's New.
     
-    Args:
-        date_filter: Optional date filter for portal scraping
-        
     Returns:
         Dictionary with roadmap, changeAnnouncements, and whatsNew data
     """
     # Scrape Entra portal data
-    portal_data = await scrape_entra_portal(date_filter)
+    portal_data = await scrape_entra_portal()
     
     # Scrape What's New page
     print("\n📚 Scraping Microsoft Learn What's New page...")

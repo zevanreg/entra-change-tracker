@@ -280,10 +280,9 @@ async function scrapeTab(page, frame, tabName, dateFilter = null, extractDetails
 
 /**
  * Scrape Roadmap data from Entra portal
- * @param {string|null} dateFilter - Optional date filter
  * @returns {Promise<{roadmap: Array<Object>|null, changeAnnouncements: Array<Object>|null}>}
  */
-async function scrapeEntraPortal(dateFilter = null) {
+async function scrapeEntraPortal() {
   let context, page, frame;
   
   try {
@@ -291,6 +290,7 @@ async function scrapeEntraPortal(dateFilter = null) {
     ({ context, page, frame } = await initializeBrowser());
 
     const config = getConfig();
+    const dateFilter = config.browserScraping.dateFilter;
 
     // Scrape Roadmap
     const roadmapExtractDetails = config.browserScraping.roadmap.extractDetails;
@@ -311,12 +311,11 @@ async function scrapeEntraPortal(dateFilter = null) {
 
 /**
  * Scrape data from all sources: Entra portal and Microsoft Learn What's New
- * @param {string|null} dateFilter - Optional date filter for portal scraping
  * @returns {Promise<{roadmap: Array<Object>|null, changeAnnouncements: Array<Object>|null, whatsNew: Array<Object>|null}>}
  */
-async function scrapeAllSources(dateFilter = null) {
+async function scrapeAllSources() {
   // Scrape Entra portal data
-  const portalData = await scrapeEntraPortal(dateFilter);
+  const portalData = await scrapeEntraPortal();
   
   // Scrape What's New page
   console.log("\n📚 Scraping Microsoft Learn What's New page...");

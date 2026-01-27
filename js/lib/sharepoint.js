@@ -1,3 +1,6 @@
+const { getConfig } = require('./config');
+const { getAccessToken } = require('./auth');
+
 // Graph caches
 let cachedSiteId = null;
 const cachedListIds = new Map(); // listTitle -> listId
@@ -187,7 +190,11 @@ function mapScrapedItemToSharePointFields(listName, item, config) {
  * @param {object} config - Configuration
  * @returns {Promise<void>}
  */
-async function insertIntoSharePointList(listName, data, accessToken, config) {
+async function insertIntoSharePointList(listName, data) {
+  // Get config and access token from modules
+  const accessToken = getAccessToken();
+  const config = getConfig();
+  
   if (!config || !accessToken) {
     console.log(`⏭️ Skipping SharePoint insertion for ${listName} (not configured)`);
     return;

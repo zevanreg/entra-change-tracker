@@ -224,14 +224,28 @@ python/
 ├── config.json.template        # Configuration template
 ├── requirements.txt            # Python dependencies
 ├── .token-cache.json          # MSAL token cache (auto-generated)
-├── python-edge-profile/       # Edge browser profile (auto-generated)
+├── edge-profile/              # Edge browser profile (auto-generated)
 └── lib/
     ├── __init__.py
-    ├── auth.py                # Authentication and config loading
+    ├── config.py              # Configuration management
+    ├── auth.py                # Authentication (device code/IWA)
     ├── browser_helpers.py     # Browser automation helpers
     ├── scraper.py             # Main scraping logic
     └── sharepoint.py          # SharePoint/Graph API integration
 ```
+
+## Architecture
+
+The scraper uses a modular architecture with separation of concerns:
+
+- **config.py**: Loads and validates configuration once at startup
+- **auth.py**: Handles authentication (device code flow or IWA) and token management
+- **browser_helpers.py**: Provides lazy-loaded browser automation utilities
+- **scraper.py**: Coordinates scraping operations for Entra portal and What's New pages
+- **sharepoint.py**: Manages Microsoft Graph API interactions for SharePoint
+- **entra.py**: Main orchestrator that coordinates all modules
+
+All modules follow a **direct access pattern** where they read configuration and authentication values from their respective modules rather than passing them as parameters, ensuring cleaner function signatures and better maintainability.
 
 ## Troubleshooting
 

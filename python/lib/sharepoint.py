@@ -9,6 +9,9 @@ from urllib.parse import quote
 
 import requests
 
+from .config import get_config
+from .auth import get_access_token
+
 # Graph caches
 _cached_site_id: Optional[str] = None
 _cached_list_ids: Dict[str, str] = {}
@@ -244,9 +247,7 @@ def map_scraped_item_to_sharepoint_fields(
 
 def insert_into_sharepoint_list(
     list_name: str,
-    data: List[Dict[str, Any]],
-    access_token: str,
-    sharepoint_config: Dict[str, Any]
+    data: List[Dict[str, Any]]
 ) -> None:
     """
     Insert data into a SharePoint list using Microsoft Graph API.
@@ -254,17 +255,19 @@ def insert_into_sharepoint_list(
     Args:
         list_name: The name of the SharePoint list
         data: The array of data items to insert
-        access_token: Access token for Graph API
-        sharepoint_config: SharePoint configuration
     """
-    if not sharepoint_config or not access_token:
+    # Get config and access token from modules
+    access_token = get_access_token()
+    config = get_config()
+    
+    if not config or not access_token:
         print(f"⏭️ Skipping SharePoint insertion for {list_name} (not configured)")
         return
     
     try:
         print(f"📤 Inserting {len(data)} items into SharePoint list (Graph): {list_name}")
         
-        site_id = get_site_id_from_site_url(access_token, sharepoint_config['sharepoint']['siteUrl'])
+        site_id = get_site_id_from_site_url(access_token, config['sharepoint']['siteUrl'])
         list_id = get_list_id_by_title(access_token, site_id, list_name)
         
         # Determine the date field name based on list config
@@ -273,13 +276,13 @@ def insert_into_sharepoint_list(
         
         # Collect lists from browserScraping and httpScraping
         list_entries = {}
-        browser_scraping = sharepoint_config['browserScraping']
+        browser_scraping = config['browserScraping']
         if 'roadmap' in browser_scraping:
             list_entries['roadmap'] = browser_scraping['roadmap']
         if 'changeAnnouncements' in browser_scraping:
             list_entries['changeAnnouncements'] = browser_scraping['changeAnnouncements']
         
-        http_scraping = sharepoint_config['httpScraping']
+        http_scraping = config['httpScraping']
         sharepoint_lists = http_scraping['sharepointList']
         if 'whatsNew' in sharepoint_lists:
             list_entries['whatsNew'] = sharepoint_lists['whatsNew']
@@ -297,7 +300,7 @@ def insert_into_sharepoint_list(
         
         for i, item in enumerate(data):
             try:
-                fields = map_scraped_item_to_sharepoint_fields(list_name, item, sharepoint_config)
+                fields = map_scraped_item_to_sharepoint_fields(list_name, item, config)
                 
                 # Title is required for most lists; enforce minimal safety
                 if 'Title' not in fields:

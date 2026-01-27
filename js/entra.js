@@ -35,14 +35,12 @@ function saveToFile(filename, data, timestamp) {
     resetCaches();
 
     const config = getConfig();
-    const accessToken = getAccessToken();
-    const dateFilter = getDateFilter();
 
     // Generate timestamp for file names
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
 
     // Scrape data from all sources
-    const { roadmap, changeAnnouncements, whatsNew } = await scrapeAllSources(dateFilter);
+    const { roadmap, changeAnnouncements, whatsNew } = await scrapeAllSources();
 
     // Process Roadmap data
     if (roadmap) {
@@ -51,7 +49,7 @@ function saveToFile(filename, data, timestamp) {
       }
       
       const roadmapListName = config.browserScraping.roadmap.sharepointList.name;
-      await insertIntoSharePointList(roadmapListName, roadmap, accessToken, config);
+      await insertIntoSharePointList(roadmapListName, roadmap);
     }
 
     // Process Change Announcements data
@@ -61,7 +59,7 @@ function saveToFile(filename, data, timestamp) {
       }
       
       const changeAnnouncementsListName = config.browserScraping.changeAnnouncements.sharepointList.name;
-      await insertIntoSharePointList(changeAnnouncementsListName, changeAnnouncements, accessToken, config);
+      await insertIntoSharePointList(changeAnnouncementsListName, changeAnnouncements);
     }
 
     // Process What's New data
@@ -71,7 +69,7 @@ function saveToFile(filename, data, timestamp) {
       }
       
       const whatsNewListName = config.httpScraping.sharepointList.whatsNew.name;
-      await insertIntoSharePointList(whatsNewListName, whatsNew, accessToken, config);
+      await insertIntoSharePointList(whatsNewListName, whatsNew);
     }
 
     console.log('✅ Script completed successfully.');

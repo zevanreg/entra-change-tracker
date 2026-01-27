@@ -10,60 +10,75 @@ from typing import Dict, Any, List, Optional, Tuple
 from playwright.async_api import Frame, Page
 from .config import get_config
 
-# Get configuration from config module (loaded once during initialization)
-config = get_config()
+# ==================== CONFIGURATION ACCESSORS ====================
 
-if not config:
-    raise RuntimeError('Configuration not loaded. Call load_configuration() first.')
+def get_timeouts() -> Dict[str, int]:
+    """Get timeout values from configuration"""
+    config = get_config()
+    browser_config = config['browserScraping']
+    return {
+        'SPLASH_SCREEN': browser_config['timeouts']['splashScreen'],
+        'PROGRESS_DOTS': browser_config['timeouts']['progressDots'],
+        'GENERAL_WAIT': browser_config['timeouts']['generalWait'],
+        'CLICK': browser_config['timeouts']['click'],
+        'DETACH': browser_config['timeouts']['detach'],
+        'CLOSE_PANE': browser_config['timeouts']['closePane'],
+        'BUTTON_CLOSE': browser_config['timeouts']['buttonClose'],
+        'SHORT_DELAY': browser_config['timeouts']['shortDelay'],
+        'MENU_DELAY': browser_config['timeouts']['menuDelay'],
+        'CHECKBOX_DELAY': browser_config['timeouts']['checkboxDelay']
+    }
+
+def get_selectors() -> Dict[str, str]:
+    """Get CSS selector values from configuration"""
+    config = get_config()
+    browser_config = config['browserScraping']
+    return {
+        'SPLASH_SCREEN': browser_config['selectors']['splashScreen'],
+        'DETAILS_IFRAME': browser_config['selectors']['detailsIframe'],
+        'DETAILS_ROW': browser_config['selectors']['detailsRow'],
+        'DETAILS_ROW_CHECK': browser_config['selectors']['detailsRowCheck'],
+        'DETAILS_ROW_FIELDS': browser_config['selectors']['detailsRowFields'],
+        'DETAILS_ROW_CELL': browser_config['selectors']['detailsRowCell'],
+        'PROGRESS_DOTS': browser_config['selectors']['progressDots'],
+        'CLOSE_BUTTON': browser_config['selectors']['closeButton'],
+        'SCROLLABLE_CONTAINER': browser_config['selectors']['scrollableContainer'],
+        'FILTER_BUTTON_CONTAINER': browser_config['selectors']['filterButtonContainer'],
+        'APPLY_BUTTON': browser_config['selectors']['applyButton'],
+        'RADIO_LABEL': browser_config['selectors']['radioLabel']
+    }
+
+def get_scraper_config() -> Dict[str, Any]:
+    """Get scraper-specific configuration values"""
+    config = get_config()
+    roadmap_config = config['browserScraping']['roadmap']
+    change_announcements_config = config['browserScraping']['changeAnnouncements']
+    return {
+        'roadmap': {
+            'enabled': roadmap_config['enabled'],
+            'saveToFile': roadmap_config['saveToFile'],
+            'tabs': roadmap_config['tabs']
+        },
+        'changeAnnouncements': {
+            'enabled': change_announcements_config['enabled'],
+            'saveToFile': change_announcements_config['saveToFile'],
+            'tabs': change_announcements_config['tabs']
+        }
+    }
+
+def get_text_patterns() -> Dict[str, Any]:
+    """Get text pattern matchers from configuration"""
+    config = get_config()
+    browser_config = config['browserScraping']
+    return {
+        'OVERVIEW': browser_config['textPatterns']['overview'],
+        'NEXT_STEPS': browser_config['textPatterns']['nextSteps'],
+        'WHAT_IS_CHANGING': browser_config['textPatterns']['whatIsChanging'],
+        'ROADMAP_DESCRIPTION': browser_config['textPatterns']['roadmapDescription']
+    }
 
 # ==================== CONSTANTS ====================
-
-browser_config = config['browserScraping']
-
-TIMEOUTS = {
-    'SPLASH_SCREEN': browser_config['timeouts']['splashScreen'],
-    'PROGRESS_DOTS': browser_config['timeouts']['progressDots'],
-    'GENERAL_WAIT': browser_config['timeouts']['generalWait'],
-    'CLICK': browser_config['timeouts']['click'],
-    'DETACH': browser_config['timeouts']['detach'],
-    'CLOSE_PANE': browser_config['timeouts']['closePane'],
-    'BUTTON_CLOSE': browser_config['timeouts']['buttonClose'],
-    'SHORT_DELAY': browser_config['timeouts']['shortDelay'],
-    'MENU_DELAY': browser_config['timeouts']['menuDelay'],
-    'CHECKBOX_DELAY': browser_config['timeouts']['checkboxDelay']
-}
-
-SELECTORS = {
-    'SPLASH_SCREEN': browser_config['selectors']['splashScreen'],
-    'DETAILS_IFRAME': browser_config['selectors']['detailsIframe'],
-    'DETAILS_ROW': browser_config['selectors']['detailsRow'],
-    'DETAILS_ROW_CHECK': browser_config['selectors']['detailsRowCheck'],
-    'DETAILS_ROW_FIELDS': browser_config['selectors']['detailsRowFields'],
-    'DETAILS_ROW_CELL': browser_config['selectors']['detailsRowCell'],
-    'PROGRESS_DOTS': browser_config['selectors']['progressDots'],
-    'CLOSE_BUTTON': browser_config['selectors']['closeButton'],
-    'SCROLLABLE_CONTAINER': browser_config['selectors']['scrollableContainer'],
-    'FILTER_BUTTON_CONTAINER': browser_config['selectors']['filterButtonContainer'],
-    'APPLY_BUTTON': browser_config['selectors']['applyButton'],
-    'RADIO_LABEL': browser_config['selectors']['radioLabel']
-}
-
-SCRAPER_CONFIG = {
-    'SCROLL_STEP_PX': browser_config['scraperConfig']['scrollStepPx'],
-    'PASS_DELAY_MS': browser_config['scraperConfig']['passDelayMs'],
-    'MAX_IDLE_PASSES': browser_config['scraperConfig']['maxIdlePasses'],
-    'TOTAL_TIMEOUT_MS': browser_config['scraperConfig']['totalTimeoutMs'],
-    'MAX_RETRY_ATTEMPTS': browser_config['scraperConfig']['maxRetryAttempts'],
-    'CLICK_OUTSIDE_COORDS': browser_config['scraperConfig']['clickOutsideCoords']
-}
-
-TEXT_PATTERNS = {
-    'OVERVIEW': browser_config['textPatterns']['overview'],
-    'NEXT_STEPS': browser_config['textPatterns']['nextSteps'],
-    'WHAT_IS_CHANGING': browser_config['textPatterns']['whatIsChanging'],
-    'ROADMAP_DESCRIPTION': browser_config['textPatterns']['roadmapDescription']
-}
-
+# No longer needed - functions will call getters directly
 
 # ==================== HELPER FUNCTIONS ====================
 
@@ -75,11 +90,14 @@ async def wait_for_splash_screen(frame: Frame, timeout: int = None) -> None:
         frame: The frame to check
         timeout: Maximum wait time in ms
     """
+    timeouts = get_timeouts()
+    selectors = get_selectors()
+    
     if timeout is None:
-        timeout = TIMEOUTS['SPLASH_SCREEN']
+        timeout = timeouts['SPLASH_SCREEN']
     
     try:
-        splash_screen = frame.locator(SELECTORS['SPLASH_SCREEN'])
+        splash_screen = frame.locator(selectors['SPLASH_SCREEN'])
         await splash_screen.wait_for(state='hidden', timeout=timeout)
     except Exception:
         # Splash screen might not exist or already hidden
@@ -97,6 +115,8 @@ async def click_tab(frame: Frame, tab_name: str) -> bool:
     Returns:
         True if the tab was found and clicked, false otherwise
     """
+    timeouts = get_timeouts()
+    
     try:
         # Wait for splash screen to disappear first
         await wait_for_splash_screen(frame)
@@ -112,18 +132,18 @@ async def click_tab(frame: Frame, tab_name: str) -> bool:
         count = await role_tab.count()
         if count > 0:
             # Wait for tab to be visible and stable
-            await role_tab.first.wait_for(state='visible', timeout=TIMEOUTS['GENERAL_WAIT'])
+            await role_tab.first.wait_for(state='visible', timeout=timeouts['GENERAL_WAIT'])
             
             try:
                 # Try normal click first
-                await role_tab.first.click(timeout=TIMEOUTS['CLICK'])
+                await role_tab.first.click(timeout=timeouts['CLICK'])
             except Exception as click_err:
                 # If intercepted, force click
                 print(f"Normal click failed, forcing click on tab \"{tab_name}\"")
-                await role_tab.first.click(force=True, timeout=TIMEOUTS['CLICK'])
+                await role_tab.first.click(force=True, timeout=timeouts['CLICK'])
             
             # Wait a moment for tab content to load
-            await frame.wait_for_timeout(TIMEOUTS['SHORT_DELAY'])
+            await frame.wait_for_timeout(timeouts['SHORT_DELAY'])
             return True
     except Exception as err:
         print(f"Error clicking tab \"{tab_name}\": {err}")
@@ -142,33 +162,36 @@ async def set_date_range_filter(frame: Frame, filter_option: str) -> bool:
     Returns:
         True if the filter was set successfully
     """
+    timeouts = get_timeouts()
+    selectors = get_selectors()
+    
     try:
         # Click the filter button - find button inside div with data-selection-index='1'
-        filter_button = frame.locator(f"{SELECTORS['FILTER_BUTTON_CONTAINER']} button").first
-        await filter_button.wait_for(state='visible', timeout=TIMEOUTS['GENERAL_WAIT'])
-        await filter_button.click(timeout=TIMEOUTS['CLICK'])
+        filter_button = frame.locator(f"{selectors['FILTER_BUTTON_CONTAINER']} button").first
+        await filter_button.wait_for(state='visible', timeout=timeouts['GENERAL_WAIT'])
+        await filter_button.click(timeout=timeouts['CLICK'])
         print('Filter button clicked')
         
         # Wait for the filter menu to appear
-        await frame.wait_for_timeout(TIMEOUTS['MENU_DELAY'])
+        await frame.wait_for_timeout(timeouts['MENU_DELAY'])
         
         # Find and click the radio input with the matching label
-        radio_label = frame.locator(f"span{SELECTORS['RADIO_LABEL']}:has-text(\"{filter_option}\")")
-        await radio_label.wait_for(state='visible', timeout=TIMEOUTS['CLICK'])
+        radio_label = frame.locator(f"span{selectors['RADIO_LABEL']}:has-text(\"{filter_option}\")")
+        await radio_label.wait_for(state='visible', timeout=timeouts['CLICK'])
         
         # Click the label to select the radio button
-        await radio_label.click(timeout=TIMEOUTS['CLICK'])
+        await radio_label.click(timeout=timeouts['CLICK'])
         print(f"Selected filter option: {filter_option}")
         
         # Wait a moment for the selection to register
-        await frame.wait_for_timeout(TIMEOUTS['MENU_DELAY'])
+        await frame.wait_for_timeout(timeouts['MENU_DELAY'])
         
         # Click the Apply button
-        apply_button = frame.locator(SELECTORS['APPLY_BUTTON'])
+        apply_button = frame.locator(selectors['APPLY_BUTTON'])
         if await apply_button.count() > 0 and not await apply_button.is_disabled():
-            await apply_button.click(timeout=TIMEOUTS['CLICK'])
+            await apply_button.click(timeout=timeouts['CLICK'])
             print('Apply button clicked')
-            await frame.wait_for_timeout(TIMEOUTS['SHORT_DELAY'])
+            await frame.wait_for_timeout(timeouts['SHORT_DELAY'])
         
         return True
     except Exception as err:
@@ -189,11 +212,13 @@ async def extract_overview(details_frame: Frame, row_index: int) -> str:
     Returns:
         The extracted overview text
     """
+    text_patterns = get_text_patterns()
+    
     try:
         if details_frame.is_detached():
             return ''
         
-        overview_h3 = details_frame.locator('h3').filter(has_text=TEXT_PATTERNS['OVERVIEW'])
+        overview_h3 = details_frame.locator('h3').filter(has_text=text_patterns['OVERVIEW'])
         
         if await overview_h3.count() > 0:
             parent = overview_h3.locator('..')
@@ -219,11 +244,13 @@ async def extract_url(details_frame: Frame, row_index: int) -> str:
     Returns:
         The extracted URL
     """
+    text_patterns = get_text_patterns()
+    
     try:
         if details_frame.is_detached():
             return ''
         
-        next_steps_h3 = details_frame.locator('h3').filter(has_text=TEXT_PATTERNS['NEXT_STEPS'])
+        next_steps_h3 = details_frame.locator('h3').filter(has_text=text_patterns['NEXT_STEPS'])
         
         if await next_steps_h3.count() > 0:
             parent = next_steps_h3.locator('..')
@@ -249,12 +276,14 @@ async def extract_description(details_frame: Frame, row_index: int) -> str:
     Returns:
         The extracted description text
     """
+    text_patterns = get_text_patterns()
+    
     try:
         if details_frame.is_detached():
             return ''
         
         # Try "What is changing" first (change announcements)
-        desc_h3 = details_frame.locator('h3').filter(has_text=TEXT_PATTERNS['WHAT_IS_CHANGING'])
+        desc_h3 = details_frame.locator('h3').filter(has_text=text_patterns['WHAT_IS_CHANGING'])
         
         if await desc_h3.count() > 0:
             # Get the span that is the next sibling of the h3
@@ -265,7 +294,7 @@ async def extract_description(details_frame: Frame, row_index: int) -> str:
                 return text if text else ''
         else:
             # Fall back to "Here's what you will see in this release:" (roadmap)
-            desc_h3 = details_frame.locator('h3').filter(has_text=TEXT_PATTERNS['ROADMAP_DESCRIPTION'])
+            desc_h3 = details_frame.locator('h3').filter(has_text=text_patterns['ROADMAP_DESCRIPTION'])
             
             if await desc_h3.count() > 0:
                 parent = desc_h3.locator('..')
@@ -291,23 +320,26 @@ async def open_details_pane(page: Page, frame: Frame, row_index: int) -> None:
         frame: The frame containing the row
         row_index: The index of the row to click
     """
-    row = frame.locator(f"{SELECTORS['DETAILS_ROW']}[data-item-index='{row_index}']").first
-    checkbox = row.locator(SELECTORS['DETAILS_ROW_CHECK'])
+    timeouts = get_timeouts()
+    selectors = get_selectors()
+    
+    row = frame.locator(f"{selectors['DETAILS_ROW']}[data-item-index='{row_index}']").first
+    checkbox = row.locator(selectors['DETAILS_ROW_CHECK'])
     
     # Check if the row is already selected (checked)
     is_checked = await checkbox.get_attribute('aria-checked')
     if is_checked == 'true':
         # Uncheck it first by clicking
-        await checkbox.click(timeout=TIMEOUTS['CLICK'])
-        await page.wait_for_timeout(TIMEOUTS['CHECKBOX_DELAY'])
+        await checkbox.click(timeout=timeouts['CLICK'])
+        await page.wait_for_timeout(timeouts['CHECKBOX_DELAY'])
     
     # Now click to select and open details pane
-    await checkbox.click(timeout=TIMEOUTS['CLICK'])
+    await checkbox.click(timeout=timeouts['CLICK'])
     
     # Wait for at least one details iframe to appear
-    await page.locator(f"{SELECTORS['DETAILS_IFRAME']}:visible").first.wait_for(
+    await page.locator(f"{selectors['DETAILS_IFRAME']}:visible").first.wait_for(
         state='attached',
-        timeout=TIMEOUTS['GENERAL_WAIT']
+        timeout=timeouts['GENERAL_WAIT']
     )
 
 
@@ -323,11 +355,14 @@ async def find_correct_iframe(page: Page, row_title: str, row_index: int) -> Opt
     Returns:
         The matched iframe or None
     """
-    all_iframes = await page.locator(SELECTORS['DETAILS_IFRAME']).all()
+    timeouts = get_timeouts()
+    selectors = get_selectors()
+    
+    all_iframes = await page.locator(selectors['DETAILS_IFRAME']).all()
     
     for iframe in all_iframes:
         try:
-            await iframe.wait_for(state='attached', timeout=TIMEOUTS['GENERAL_WAIT'])
+            await iframe.wait_for(state='attached', timeout=timeouts['GENERAL_WAIT'])
             
             iframe_handle = await iframe.element_handle()
             frame = await iframe_handle.content_frame()
@@ -337,8 +372,8 @@ async def find_correct_iframe(page: Page, row_title: str, row_index: int) -> Opt
             
             # Wait for progress dots to disappear
             try:
-                progress_dots = frame.locator(SELECTORS['PROGRESS_DOTS'])
-                await progress_dots.wait_for(state='hidden', timeout=TIMEOUTS['PROGRESS_DOTS'])
+                progress_dots = frame.locator(selectors['PROGRESS_DOTS'])
+                await progress_dots.wait_for(state='hidden', timeout=timeouts['PROGRESS_DOTS'])
             except Exception:
                 # Progress dots might not exist or already hidden
                 pass
@@ -369,23 +404,23 @@ async def close_details_pane(page: Page, row_index: int) -> None:
         page: The main page
         row_index: Row index for logging
     """
+    timeouts = get_timeouts()
+    selectors = get_selectors()
+    
     try:
         # Method 1: Look for close button in the main page (Azure blade close button)
-        close_button = page.locator(SELECTORS['CLOSE_BUTTON']).last
+        close_button = page.locator(selectors['CLOSE_BUTTON']).last
         if await close_button.count() > 0 and await close_button.is_visible():
-            await close_button.click(timeout=TIMEOUTS['BUTTON_CLOSE'])
+            await close_button.click(timeout=timeouts['BUTTON_CLOSE'])
         else:
             # Method 2: Click outside the iframe to close it
-            await page.mouse.click(
-                SCRAPER_CONFIG['CLICK_OUTSIDE_COORDS']['x'],
-                SCRAPER_CONFIG['CLICK_OUTSIDE_COORDS']['y']
-            )
+            await page.mouse.click(50, 50)
         
         # Wait for all details iframes to be removed from DOM
         await page.wait_for_function(
             "selector => document.querySelectorAll(selector).length === 0",
-            arg=SELECTORS['DETAILS_IFRAME'],
-            timeout=TIMEOUTS['CLOSE_PANE']
+            arg=selectors['DETAILS_IFRAME'],
+            timeout=timeouts['CLOSE_PANE']
         )
     except Exception as err:
         # If close button/click didn't work, try ESC key as fallback
@@ -394,8 +429,8 @@ async def close_details_pane(page: Page, row_index: int) -> None:
             await page.keyboard.press('Escape')
             await page.wait_for_function(
                 "selector => document.querySelectorAll(selector).length === 0",
-                arg=SELECTORS['DETAILS_IFRAME'],
-                timeout=TIMEOUTS['CLOSE_PANE']
+                arg=selectors['DETAILS_IFRAME'],
+                timeout=timeouts['CLOSE_PANE']
             )
         except Exception as esc_err:
             print(f"Details iframe did not detach for row {row_index}, continuing anyway...")
@@ -457,20 +492,20 @@ async def extract_row_details(
         
         # Attempt to close any open pane
         try:
-            details_iframe_locator = page.locator(SELECTORS['DETAILS_IFRAME']).last
+            timeouts = get_timeouts()
+            selectors = get_selectors()
+            
+            details_iframe_locator = page.locator(selectors['DETAILS_IFRAME']).last
             
             # Try close button first
             close_button = page.locator('button[aria-label="Close"]').last
             if await close_button.count() > 0:
-                await close_button.click(timeout=TIMEOUTS['CLOSE_PANE'])
+                await close_button.click(timeout=timeouts['CLOSE_PANE'])
             else:
                 # Try clicking outside
-                await page.mouse.click(
-                    SCRAPER_CONFIG['CLICK_OUTSIDE_COORDS']['x'],
-                    SCRAPER_CONFIG['CLICK_OUTSIDE_COORDS']['y']
-                )
+                await page.mouse.click(50, 50)
             
-            await details_iframe_locator.wait_for(state='detached', timeout=TIMEOUTS['DETACH'])
+            await details_iframe_locator.wait_for(state='detached', timeout=timeouts['DETACH'])
         except Exception:
             pass
         
@@ -491,6 +526,10 @@ async def scrape_details_list(page: Page, frame: Frame, extract_details: bool = 
     Returns:
         Array of row objects with field names and details
     """
+    selectors = get_selectors()
+    config = get_config()
+    scraper_config = config['browserScraping']['scraperConfig']
+    
     # Accumulator for processed rows
     processed_rows = []
     seen_indices = set()
@@ -509,17 +548,17 @@ async def scrape_details_list(page: Page, frame: Frame, extract_details: bool = 
             container.scrollTop = 0;
             window.scrollTo(0, 0);
         }}
-    """, SELECTORS['SCROLLABLE_CONTAINER'])
-    await page.wait_for_timeout(SCRAPER_CONFIG['PASS_DELAY_MS'])
+    """, selectors['SCROLLABLE_CONTAINER'])
+    await page.wait_for_timeout(scraper_config['passDelayMs'])
     
     while True:
         # Timeout guard
-        if (time.time() - start_time) * 1000 > SCRAPER_CONFIG['TOTAL_TIMEOUT_MS']:
+        if (time.time() - start_time) * 1000 > scraper_config['totalTimeoutMs']:
             print("Timeout reached; returning accumulated rows.")
             break
         
         # Get currently visible rows
-        visible_rows = await frame.locator(SELECTORS['DETAILS_ROW']).all()
+        visible_rows = await frame.locator(selectors['DETAILS_ROW']).all()
         new_rows_found = False
         
         for row in visible_rows:
@@ -541,8 +580,8 @@ async def scrape_details_list(page: Page, frame: Frame, extract_details: bool = 
             new_rows_found = True
             
             # Extract basic row data
-            field_container = row.locator(SELECTORS['DETAILS_ROW_FIELDS'])
-            cells = await field_container.locator(SELECTORS['DETAILS_ROW_CELL']).all()
+            field_container = row.locator(selectors['DETAILS_ROW_FIELDS'])
+            cells = await field_container.locator(selectors['DETAILS_ROW_CELL']).all()
             
             obj = {}
             for i, cell in enumerate(cells):
@@ -556,17 +595,17 @@ async def scrape_details_list(page: Page, frame: Frame, extract_details: bool = 
             details = {'url': '', 'description': '', 'overview': ''}
             
             if extract_details:
-                for attempt in range(1, SCRAPER_CONFIG['MAX_RETRY_ATTEMPTS'] + 1):
+                for attempt in range(1, scraper_config['maxRetryAttempts'] + 1):
                     details = await extract_row_details(page, frame, index_num, obj.get('title', ''))
                     
                     if details['description']:
                         # Description found, break out of retry loop
                         break
                     
-                    if attempt < SCRAPER_CONFIG['MAX_RETRY_ATTEMPTS']:
-                        print(f"Empty description for row {index_num}, retrying (attempt {attempt}/{SCRAPER_CONFIG['MAX_RETRY_ATTEMPTS']})...")
+                    if attempt < scraper_config['maxRetryAttempts']:
+                        print(f"Empty description for row {index_num}, retrying (attempt {attempt}/{scraper_config['maxRetryAttempts']})...")
                     else:
-                        print(f"Empty description for row {index_num} after {SCRAPER_CONFIG['MAX_RETRY_ATTEMPTS']} attempts")
+                        print(f"Empty description for row {index_num} after {scraper_config['maxRetryAttempts']} attempts")
             
             obj['url'] = details['url']
             obj['description'] = details['description']
@@ -591,9 +630,9 @@ async def scrape_details_list(page: Page, frame: Frame, extract_details: bool = 
                 const atBottom = container.scrollTop >= maxScroll - 2;
                 return {{ atBottom: atBottom, currentScroll: container.scrollTop, maxScroll: maxScroll }};
             }}
-        """, SELECTORS['SCROLLABLE_CONTAINER'])
+        """, selectors['SCROLLABLE_CONTAINER'])
         
-        if scroll_info['atBottom'] and idle_passes >= SCRAPER_CONFIG['MAX_IDLE_PASSES']:
+        if scroll_info['atBottom'] and idle_passes >= scraper_config['maxIdlePasses']:
             print("Reached bottom and stabilized.")
             break
         
@@ -609,9 +648,9 @@ async def scrape_details_list(page: Page, frame: Frame, extract_details: bool = 
                 container.scrollTop = Math.min(container.scrollTop + step, maxScroll);
                 window.scrollTo(0, container.scrollTop);
             }}
-        """, {'selector': SELECTORS['SCROLLABLE_CONTAINER'], 'step': SCRAPER_CONFIG['SCROLL_STEP_PX']})
+        """, {'selector': selectors['SCROLLABLE_CONTAINER'], 'step': scraper_config['scrollStepPx']})
         
-        await page.wait_for_timeout(SCRAPER_CONFIG['PASS_DELAY_MS'])
+        await page.wait_for_timeout(scraper_config['passDelayMs'])
     
     print(f"✅ Collected and processed {len(processed_rows)} unique rows with details")
     return processed_rows

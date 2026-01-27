@@ -4,7 +4,7 @@ Handles MSAL device code authentication and DefaultAzureCredential (IWA)
 """
 
 import os
-from typing import Optional
+from typing import Optional, Dict
 
 import msal
 from azure.identity import DefaultAzureCredential

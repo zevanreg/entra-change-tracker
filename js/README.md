@@ -200,25 +200,46 @@ If configured, data is automatically inserted into specified SharePoint lists wi
 ## Project Structure
 
 ```
-entra-playwright/
-├── entra.js                         # Main scraper
-├── config.json                      # SharePoint & filter config (gitignored)
+js/
+├── entra.js                         # Main entry point
+├── config.json                      # Configuration (create from template)
 ├── config.json.template             # Configuration template
 ├── package.json                     # Node.js dependencies
 ├── .gitignore                       # Git ignore rules
-├── edge-profile/                    # Edge browser profile (gitignored)
-└── README.md                        # This file
+├── pw-profile/                      # Playwright browser profile (auto-generated)
+├── README.md                        # This file
+└── lib/
+    ├── config.js                    # Configuration management
+    ├── auth.js                      # Authentication (device code/IWA)
+    ├── browser-helpers.js           # Browser automation helpers
+    ├── scraper.js                   # Main scraping logic
+    └── sharepoint.js                # SharePoint/Graph API integration
 ```
 
 ## How It Works
 
-1. **Authentication**: Uses persistent browser context to maintain login session
-2. **Navigation**: Opens Entra Change Management Hub
-3. **Tab Switching**: Clicks Roadmap and Change Announcements tabs
-4. **Date Filtering**: Applies date range filter from config
-5. **Scrolling**: Handles virtualized lists by scrolling and capturing rows
-6. **Detail Extraction**: Clicks each row to extract full details
-7. **Data Export**: Saves to JSON and optionally to SharePoint
+### Architecture
+
+The scraper uses a modular architecture with separation of concerns:
+
+- **config.js**: Loads and validates configuration once at startup
+- **auth.js**: Handles authentication (device code flow or IWA) and token management
+- **browser-helpers.js**: Provides lazy-loaded browser automation utilities
+- **scraper.js**: Coordinates scraping operations for Entra portal and What's New pages
+- **sharepoint.js**: Manages Microsoft Graph API interactions for SharePoint
+- **entra.js**: Main orchestrator that coordinates all modules
+
+### Execution Flow
+
+1. **Initialization**: Loads configuration and authenticates to Microsoft Graph
+2. **Browser Context**: Uses persistent browser profile to maintain Entra portal session
+3. **Navigation**: Opens Entra Change Management Hub
+4. **Tab Switching**: Clicks Roadmap and Change Announcements tabs
+5. **Date Filtering**: Applies configured date range filter
+6. **Scrolling**: Handles virtualized lists by scrolling and capturing rows
+7. **Detail Extraction**: Clicks each row to extract full details
+8. **HTTP Scraping**: Fetches What's New items from public Microsoft Learn page
+9. **Data Export**: Saves to JSON files and optionally inserts into SharePoint lists
 
 ## Troubleshooting
 

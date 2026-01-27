@@ -39,14 +39,12 @@ async def main():
         reset_caches()
         
         config = get_config()
-        access_token = get_access_token()
-        date_filter = get_date_filter()
         
         # Generate timestamp for file names
         timestamp = datetime.now().isoformat().replace(':', '-').replace('.', '-')[:19]
         
         # Scrape data from all sources
-        result = await scrape_all_sources(date_filter)
+        result = await scrape_all_sources()
         roadmap = result['roadmap']
         change_announcements = result['changeAnnouncements']
         whats_new = result['whatsNew']
@@ -56,46 +54,24 @@ async def main():
             if config['browserScraping']['roadmap']['saveToFile']:
                 save_to_file('roadmap', roadmap, timestamp)
             
-            browser_scraping = config['browserScraping']
-            roadmap_config = browser_scraping['roadmap']
-            sharepoint_list = roadmap_config['sharepointList']
-            roadmap_list_name = sharepoint_list['name']
-            
-            insert_into_sharepoint_list(roadmap_list_name, roadmap, access_token, config)
+            roadmap_list_name = config['browserScraping']['roadmap']['sharepointList']['name']
+            insert_into_sharepoint_list(roadmap_list_name, roadmap)
         
         # Process Change Announcements data
         if change_announcements:
             if config['browserScraping']['changeAnnouncements']['saveToFile']:
                 save_to_file('change-announcements', change_announcements, timestamp)
             
-            browser_scraping = config['browserScraping']
-            change_config = browser_scraping['changeAnnouncements']
-            sharepoint_list = change_config['sharepointList']
-            change_announcements_list_name = sharepoint_list['name']
-            
-            insert_into_sharepoint_list(
-                change_announcements_list_name,
-                change_announcements,
-                access_token,
-                config
-            )
+            change_announcements_list_name = config['browserScraping']['changeAnnouncements']['sharepointList']['name']
+            insert_into_sharepoint_list(change_announcements_list_name, change_announcements)
         
         # Process What's New data
         if whats_new:
             if config['httpScraping']['saveToFile']:
                 save_to_file('whats-new', whats_new, timestamp)
             
-            http_scraping = config['httpScraping']
-            sharepoint_lists = http_scraping['sharepointList']
-            whats_new_config = sharepoint_lists['whatsNew']
-            whats_new_list_name = whats_new_config['name']
-            
-            insert_into_sharepoint_list(
-                whats_new_list_name,
-                whats_new,
-                access_token,
-                config
-            )
+            whats_new_list_name = config['httpScraping']['sharepointList']['whatsNew']['name']
+            insert_into_sharepoint_list(whats_new_list_name, whats_new)
         
         print('✅ Script completed successfully.')
     except Exception as error:
