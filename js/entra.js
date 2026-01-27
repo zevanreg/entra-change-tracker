@@ -7,7 +7,8 @@ const fs = require("fs");
 const path = require("path");
 
 // Import modules
-const { initializeConfiguration, getConfiguration } = require("./lib/auth");
+const { loadConfiguration, getConfig, getDateFilter } = require("./lib/config");
+const { initializeAuthentication, getAccessToken } = require("./lib/auth");
 const { insertIntoSharePointList, resetCaches } = require("./lib/sharepoint");
 const { scrapeAllSources } = require("./lib/scraper");
 
@@ -29,11 +30,13 @@ function saveToFile(filename, data, timestamp) {
 (async () => {
   try {
     // Initialize configuration and authenticate
-    await initializeConfiguration();
+    loadConfiguration();
+    await initializeAuthentication();
     resetCaches();
 
-    const { config, accessToken } = getConfiguration();
-    const dateFilter = config.browserScraping.dateFilter;
+    const config = getConfig();
+    const accessToken = getAccessToken();
+    const dateFilter = getDateFilter();
 
     // Generate timestamp for file names
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);

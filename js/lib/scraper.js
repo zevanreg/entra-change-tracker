@@ -7,7 +7,7 @@ const { chromium } = require("playwright");
 const axios = require("axios");
 const cheerio = require("cheerio");
 const { waitForSplashScreen, clickTab, setDateRangeFilter, scrapeDetailsList } = require("./browser-helpers");
-const { getConfiguration } = require("./auth");
+const { getConfig } = require("./config");
 
 /**
  * Extract release type from the beginning of the title
@@ -15,7 +15,7 @@ const { getConfiguration } = require("./auth");
  * @returns {{releaseType: string, cleanedTitle: string}}
  */
 function extractReleaseTypeFromTitle(title) {
-  const { config } = getConfiguration();
+  const config = getConfig();
   const releaseTypeMapping = config.httpScraping.releaseTypeMapping;
   
   // Check if title starts with any known release type (case-insensitive)
@@ -79,7 +79,7 @@ function extractWhatsNewItem(h3Element, monthText, $) {
       fullTitle = titleLink.text().trim();
       item.link = titleLink.attr('href') || '';
       if (item.link && !item.link.startsWith('http')) {
-        const { config } = getConfiguration();
+        const config = getConfig();
         const baseUrl = config.httpScraping.microsoftLearnBase;
         item.link = `${baseUrl}${item.link}`;
       }
@@ -156,7 +156,7 @@ function extractWhatsNewItem(h3Element, monthText, $) {
  * @returns {Promise<Array<Object>|null>}
  */
 async function scrapeWhatsNewPage() {
-  const { config } = getConfiguration();
+  const config = getConfig();
   const url = config.httpScraping.whatsNew;
   
   try {
@@ -214,7 +214,7 @@ async function initializeBrowser() {
   
   const page = context.pages()[0];
 
-  const { config } = getConfiguration();
+  const config = getConfig();
   const entraUrl = config.browserScraping.entraPortal;
 
   // Navigate to Entra portal
@@ -290,7 +290,7 @@ async function scrapeEntraPortal(dateFilter = null) {
     // Initialize browser and navigate
     ({ context, page, frame } = await initializeBrowser());
 
-    const { config } = getConfiguration();
+    const config = getConfig();
 
     // Scrape Roadmap
     const roadmapExtractDetails = config.browserScraping.roadmap.extractDetails;

@@ -18,7 +18,7 @@ from .browser_helpers import (
     set_date_range_filter,
     scrape_details_list
 )
-from .auth import get_configuration
+from .config import get_config
 
 
 def extract_release_type_from_title(title: str) -> tuple[str, str]:
@@ -31,7 +31,7 @@ def extract_release_type_from_title(title: str) -> tuple[str, str]:
     Returns:
         Tuple of (release_type, cleaned_title)
     """
-    config = get_configuration()['config']
+    config = get_config()
     http_scraping = config['httpScraping']
     release_type_mapping = http_scraping['releaseTypeMapping']
     
@@ -108,7 +108,7 @@ def scrape_whats_new_page() -> Optional[List[Dict[str, Any]]]:
         List of items with Release Type, Title, Type, Service Category, 
         Product Capability, Detail, Link, Date
     """
-    config = get_configuration()['config']
+    config = get_config()
     http_scraping = config['httpScraping']
     url = http_scraping['whatsNew']
     
@@ -176,7 +176,7 @@ def extract_whats_new_item(h3_element, month_text: str) -> Optional[Dict[str, An
             full_title = title_link.get_text(strip=True)
             item['link'] = title_link.get('href', '')
             if item['link'] and not item['link'].startswith('http'):
-                config = get_configuration()['config']
+                config = get_config()
                 http_scraping = config['httpScraping']
                 base_url = http_scraping['microsoftLearnBase']
                 item['link'] = f"{base_url}{item['link']}"
@@ -259,7 +259,7 @@ async def scrape_entra_portal(
     Returns:
         Dictionary with roadmap and changeAnnouncements data
     """
-    config = get_configuration()['config']
+    config = get_config()
     browser_scraping = config['browserScraping']
     entra_url = browser_scraping['entraPortal']
     
@@ -312,7 +312,7 @@ async def scrape_entra_portal(
                 pass
 
             # Get config for extract_details settings
-            config_obj = get_configuration()['config']
+            config_obj = get_config()
             browser_scraping_config = config_obj['browserScraping']
 
             # Scrape Roadmap

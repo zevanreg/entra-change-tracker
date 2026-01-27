@@ -9,7 +9,8 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from lib.auth import initialize_configuration, get_configuration
+from lib.config import load_configuration, get_config, get_date_filter
+from lib.auth import initialize_authentication, get_access_token
 from lib.sharepoint import insert_into_sharepoint_list, reset_caches
 from lib.scraper import scrape_all_sources
 
@@ -33,13 +34,13 @@ async def main():
     """Main execution function."""
     try:
         # Initialize configuration and authenticate
-        initialize_configuration()
+        load_configuration()
+        initialize_authentication()
         reset_caches()
         
-        app_config = get_configuration()
-        config = app_config['config'] if 'config' in app_config else app_config['sharepointConfig']
-        date_filter = config['browserScraping']['dateFilter']
-        access_token = app_config['accessToken']
+        config = get_config()
+        access_token = get_access_token()
+        date_filter = get_date_filter()
         
         # Generate timestamp for file names
         timestamp = datetime.now().isoformat().replace(':', '-').replace('.', '-')[:19]

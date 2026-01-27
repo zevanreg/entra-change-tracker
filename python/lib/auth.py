@@ -1,21 +1,17 @@
 """
-Authentication and configuration management for Entra Change Tracker
-Handles MSAL device code authentication and config loading
+Authentication management for Entra Change Tracker
+Handles MSAL device code authentication and DefaultAzureCredential (IWA)
 """
 
-import json
 import os
-from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional
 
 import msal
 from azure.identity import DefaultAzureCredential
 
-VALID_DATE_FILTERS = ["Last 1 month", "Last 3 months", "Last 6 months", "Last 1 year"]
+from .config import get_config
 
-# Global configuration variables
-_config: Optional[Dict[str, Any]] = None
-_date_filter: Optional[str] = None
+# Global access token
 _access_token: Optional[str] = None
 
 
@@ -129,38 +125,22 @@ def get_graph_access_token_with_device_code(config: Dict[str, str]) -> str:
         raise Exception(f"Authentication failed: {result.get('error_description', result)}")
 
 
-def initialize_configuration() -> None:
+def initialize_authentication() -> None:
     """
-    Initialize configuration from config.json and acquire access token.
+    Initialize authentication and acquire access token.
+    Requires configuration to be loaded first via config.load_configuration().
     """
-    global _config, _date_filter, _access_token
+    global _access_token
     
     try:
-        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.json")
+        config = get_config()
         
-        if not os.path.exists(config_path):
-            print("⚠️ config.json not found - data will only be saved locally")
-            print("📅 No date filter specified, showing all results")
+        if not config:
+            print("⚠️ No configuration loaded - authentication skipped")
             return
         
-        with open(config_path, 'r', encoding='utf-8') as f:
-            loadedConfig = json.load(f)
-        
-        # Validate and set date filter
-        config_date_filter = loadedConfig.get('browserScraping', {}).get('dateFilter')
-        if config_date_filter:
-            if config_date_filter in VALID_DATE_FILTERS:
-                _date_filter = config_date_filter
-                print(f"📅 Using date filter from config: {_date_filter}")
-            else:
-                print(f"❌ Invalid date filter in config: \"{config_date_filter}\"")
-                print(f"   Valid options: {', '.join(VALID_DATE_FILTERS)}")
-                exit(1)
-        else:
-            print("📅 No date filter specified in config, showing all results")
-        
         # Determine authentication method
-        sharepoint_config = loadedConfig.get('sharepoint', {})
+        sharepoint_config = config.get('sharepoint', {})
         auth_config = sharepoint_config.get('authentication', {})
         auth_method = (auth_config.get('authMethod') or 'devicecode').lower()
         
@@ -183,21 +163,16 @@ def initialize_configuration() -> None:
         else:
             print("⚠️ config.json incomplete (siteUrl missing) - data saved locally only")
     
-        _config = loadedConfig
     except Exception as err:
-        print(f"⚠️ Error loading SharePoint config: {err}")
-        _config = None
+        print(f"⚠️ Error during authentication: {err}")
+        raise
 
 
-def get_configuration() -> Dict[str, Any]:
+def get_access_token() -> Optional[str]:
     """
-    Get the current configuration.
+    Get the access token.
     
     Returns:
-        Dictionary with config, dateFilter, and accessToken
+        The access token string or None
     """
-    return {
-        'config': _config,
-        'dateFilter': _date_filter,
-        'accessToken': _access_token
-    }
+    return _access_token

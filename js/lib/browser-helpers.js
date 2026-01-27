@@ -2,65 +2,80 @@
  * Browser automation helper functions for Entra portal scraping
  */
 
-const fs = require('fs');
-const path = require('path');
+const { getConfig } = require('./config');
 
-// Load configuration - fail if config cannot be loaded
-const configPath = path.join(__dirname, '..', 'config.json');
-let config;
-try {
-  config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-} catch (err) {
-  throw new Error(`Failed to load config.json from ${configPath}: ${err.message}`);
+// ==================== LAZY CONFIG GETTERS ====================
+
+let _browserConfig = null;
+
+function getBrowserConfig() {
+  if (!_browserConfig) {
+    const config = getConfig();
+    if (!config) {
+      throw new Error('Configuration not loaded. Call loadConfiguration() first.');
+    }
+    _browserConfig = config.browserScraping;
+  }
+  return _browserConfig;
 }
 
 // ==================== CONSTANTS ====================
 
-const browserConfig = config.browserScraping;
+function getTimeouts() {
+  const browserConfig = getBrowserConfig();
+  return {
+    SPLASH_SCREEN: browserConfig.timeouts.splashScreen,
+    PROGRESS_DOTS: browserConfig.timeouts.progressDots,
+    GENERAL_WAIT: browserConfig.timeouts.generalWait,
+    CLICK: browserConfig.timeouts.click,
+    DETACH: browserConfig.timeouts.detach,
+    CLOSE_PANE: browserConfig.timeouts.closePane,
+    BUTTON_CLOSE: browserConfig.timeouts.buttonClose,
+    SHORT_DELAY: browserConfig.timeouts.shortDelay,
+    MENU_DELAY: browserConfig.timeouts.menuDelay,
+    CHECKBOX_DELAY: browserConfig.timeouts.checkboxDelay
+  };
+}
 
-const TIMEOUTS = {
-  SPLASH_SCREEN: browserConfig.timeouts.splashScreen,
-  PROGRESS_DOTS: browserConfig.timeouts.progressDots,
-  GENERAL_WAIT: browserConfig.timeouts.generalWait,
-  CLICK: browserConfig.timeouts.click,
-  DETACH: browserConfig.timeouts.detach,
-  CLOSE_PANE: browserConfig.timeouts.closePane,
-  BUTTON_CLOSE: browserConfig.timeouts.buttonClose,
-  SHORT_DELAY: browserConfig.timeouts.shortDelay,
-  MENU_DELAY: browserConfig.timeouts.menuDelay,
-  CHECKBOX_DELAY: browserConfig.timeouts.checkboxDelay
-};
+function getSelectors() {
+  const browserConfig = getBrowserConfig();
+  return {
+    SPLASH_SCREEN: browserConfig.selectors.splashScreen,
+    DETAILS_IFRAME: browserConfig.selectors.detailsIframe,
+    DETAILS_ROW: browserConfig.selectors.detailsRow,
+    DETAILS_ROW_CHECK: browserConfig.selectors.detailsRowCheck,
+    DETAILS_ROW_FIELDS: browserConfig.selectors.detailsRowFields,
+    DETAILS_ROW_CELL: browserConfig.selectors.detailsRowCell,
+    PROGRESS_DOTS: browserConfig.selectors.progressDots,
+    CLOSE_BUTTON: browserConfig.selectors.closeButton,
+    SCROLLABLE_CONTAINER: browserConfig.selectors.scrollableContainer,
+    FILTER_BUTTON_CONTAINER: browserConfig.selectors.filterButtonContainer,
+    APPLY_BUTTON: browserConfig.selectors.applyButton,
+    RADIO_LABEL: browserConfig.selectors.radioLabel
+  };
+}
 
-const SELECTORS = {
-  SPLASH_SCREEN: browserConfig.selectors.splashScreen,
-  DETAILS_IFRAME: browserConfig.selectors.detailsIframe,
-  DETAILS_ROW: browserConfig.selectors.detailsRow,
-  DETAILS_ROW_CHECK: browserConfig.selectors.detailsRowCheck,
-  DETAILS_ROW_FIELDS: browserConfig.selectors.detailsRowFields,
-  DETAILS_ROW_CELL: browserConfig.selectors.detailsRowCell,
-  PROGRESS_DOTS: browserConfig.selectors.progressDots,
-  CLOSE_BUTTON: browserConfig.selectors.closeButton,
-  SCROLLABLE_CONTAINER: browserConfig.selectors.scrollableContainer,
-  FILTER_BUTTON_CONTAINER: browserConfig.selectors.filterButtonContainer,
-  APPLY_BUTTON: browserConfig.selectors.applyButton,
-  RADIO_LABEL: browserConfig.selectors.radioLabel
-};
+function getScraperConfig() {
+  const browserConfig = getBrowserConfig();
+  return {
+    SCROLL_STEP_PX: browserConfig.scraperConfig.scrollStepPx,
+    PASS_DELAY_MS: browserConfig.scraperConfig.passDelayMs,
+    MAX_IDLE_PASSES: browserConfig.scraperConfig.maxIdlePasses,
+    TOTAL_TIMEOUT_MS: browserConfig.scraperConfig.totalTimeoutMs,
+    MAX_RETRY_ATTEMPTS: browserConfig.scraperConfig.maxRetryAttempts,
+    CLICK_OUTSIDE_COORDS: browserConfig.scraperConfig.clickOutsideCoords
+  };
+}
 
-const SCRAPER_CONFIG = {
-  SCROLL_STEP_PX: browserConfig.scraperConfig.scrollStepPx,
-  PASS_DELAY_MS: browserConfig.scraperConfig.passDelayMs,
-  MAX_IDLE_PASSES: browserConfig.scraperConfig.maxIdlePasses,
-  TOTAL_TIMEOUT_MS: browserConfig.scraperConfig.totalTimeoutMs,
-  MAX_RETRY_ATTEMPTS: browserConfig.scraperConfig.maxRetryAttempts,
-  CLICK_OUTSIDE_COORDS: browserConfig.scraperConfig.clickOutsideCoords
-};
-
-const TEXT_PATTERNS = {
-  OVERVIEW: browserConfig.textPatterns.overview,
-  NEXT_STEPS: browserConfig.textPatterns.nextSteps,
-  WHAT_IS_CHANGING: browserConfig.textPatterns.whatIsChanging,
-  ROADMAP_DESCRIPTION: browserConfig.textPatterns.roadmapDescription
-};
+function getTextPatterns() {
+  const browserConfig = getBrowserConfig();
+  return {
+    OVERVIEW: browserConfig.textPatterns.overview,
+    NEXT_STEPS: browserConfig.textPatterns.nextSteps,
+    WHAT_IS_CHANGING: browserConfig.textPatterns.whatIsChanging,
+    ROADMAP_DESCRIPTION: browserConfig.textPatterns.roadmapDescription
+  };
+}
 
 // ==================== HELPER FUNCTIONS ====================
 
@@ -69,10 +84,14 @@ const TEXT_PATTERNS = {
  * @param {import('playwright').Frame} frame - The frame to check
  * @param {number} timeout - Maximum wait time in ms
  */
-async function waitForSplashScreen(frame, timeout = TIMEOUTS.SPLASH_SCREEN) {
+async function waitForSplashScreen(frame, timeout) {
+  const TIMEOUTS = getTimeouts();
+  const SELECTORS = getSelectors();
+  const actualTimeout = timeout || TIMEOUTS.SPLASH_SCREEN;
+  
   try {
     const splashScreen = frame.locator(SELECTORS.SPLASH_SCREEN);
-    await splashScreen.waitFor({ state: 'hidden', timeout });
+    await splashScreen.waitFor({ state: 'hidden', timeout: actualTimeout });
   } catch (err) {
     // Splash screen might not exist or already hidden
     console.log('Splash screen not found or already hidden');
@@ -86,6 +105,8 @@ async function waitForSplashScreen(frame, timeout = TIMEOUTS.SPLASH_SCREEN) {
  * @returns {Promise<boolean>} True if the tab was found and clicked, false otherwise
  */
 async function clickTab(frame, tabName) {
+  const TIMEOUTS = getTimeouts();
+  
   try {
     // Wait for splash screen to disappear first
     await waitForSplashScreen(frame);
@@ -122,6 +143,9 @@ async function clickTab(frame, tabName) {
  * @returns {Promise<boolean>} True if the filter was set successfully
  */
 async function setDateRangeFilter(frame, filterOption) {
+  const TIMEOUTS = getTimeouts();
+  const SELECTORS = getSelectors();
+  
   try {
     // Click the filter button - find button inside div with data-selection-index='1'
     const filterButton = frame.locator(`${SELECTORS.FILTER_BUTTON_CONTAINER} button`).first();
@@ -167,6 +191,8 @@ async function setDateRangeFilter(frame, filterOption) {
  * @returns {Promise<string>} The extracted overview text
  */
 async function extractOverview(detailsFrame, rowIndex) {
+  const TEXT_PATTERNS = getTextPatterns();
+  
   try {
     if (detailsFrame.isDetached()) return '';
     
@@ -193,6 +219,8 @@ async function extractOverview(detailsFrame, rowIndex) {
  * @returns {Promise<string>} The extracted URL
  */
 async function extractUrl(detailsFrame, rowIndex) {
+  const TEXT_PATTERNS = getTextPatterns();
+  
   try {
     if (detailsFrame.isDetached()) return '';
     
@@ -219,6 +247,8 @@ async function extractUrl(detailsFrame, rowIndex) {
  * @returns {Promise<string>} The extracted description text
  */
 async function extractDescription(detailsFrame, rowIndex) {
+  const TEXT_PATTERNS = getTextPatterns();
+  
   try {
     if (detailsFrame.isDetached()) return '';
     
@@ -261,6 +291,9 @@ async function extractDescription(detailsFrame, rowIndex) {
  * @returns {Promise<void>}
  */
 async function openDetailsPane(page, frame, rowIndex) {
+  const TIMEOUTS = getTimeouts();
+  const SELECTORS = getSelectors();
+  
   const row = frame.locator(`${SELECTORS.DETAILS_ROW}[data-item-index='${rowIndex}']`).first();
   const checkbox = row.locator(SELECTORS.DETAILS_ROW_CHECK);
   
@@ -290,6 +323,9 @@ async function openDetailsPane(page, frame, rowIndex) {
  * @returns {Promise<import('playwright').Frame|null>} The matched iframe or null
  */
 async function findCorrectIframe(page, rowTitle, rowIndex) {
+  const TIMEOUTS = getTimeouts();
+  const SELECTORS = getSelectors();
+  
   const allIframes = await page.locator(SELECTORS.DETAILS_IFRAME).all();
   
   for (const iframe of allIframes) {
@@ -339,6 +375,10 @@ async function findCorrectIframe(page, rowTitle, rowIndex) {
  * @returns {Promise<void>}
  */
 async function closeDetailsPane(page, rowIndex) {
+  const TIMEOUTS = getTimeouts();
+  const SELECTORS = getSelectors();
+  const SCRAPER_CONFIG = getScraperConfig();
+  
   try {
     // Method 1: Look for close button in the main page (Azure blade close button)
     const closeButton = page.locator(SELECTORS.CLOSE_BUTTON).last();
@@ -382,6 +422,10 @@ async function closeDetailsPane(page, rowIndex) {
  * @returns {Promise<{url: string, description: string, overview: string}>} The extracted details
  */
 async function extractRowDetails(page, frame, rowIndex, rowTitle = '') {
+  const TIMEOUTS = getTimeouts();
+  const SELECTORS = getSelectors();
+  const SCRAPER_CONFIG = getScraperConfig();
+  
   const startTime = Date.now();
   console.log(`[${new Date().toISOString()}] 🔵 START extracting details for row ${rowIndex}`);
   
@@ -447,6 +491,9 @@ async function extractRowDetails(page, frame, rowIndex, rowTitle = '') {
  * @returns {Promise<Array<Object>>} Array of row objects with field names and details
  */
 async function scrapeDetailsList(page, frame, extractDetails = true) {
+  const SELECTORS = getSelectors();
+  const SCRAPER_CONFIG = getScraperConfig();
+  
   // Accumulator for processed rows
   const processedRows = [];
   const seenIndices = new Set();

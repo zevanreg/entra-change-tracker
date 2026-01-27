@@ -6,19 +6,15 @@ const {
   PersistenceCachePlugin 
 } = require("@azure/msal-node-extensions");
 const { DefaultAzureCredential } = require("@azure/identity");
-const fs = require("fs");
 const path = require("path");
+const { getConfig } = require("./config");
 
 // Node 18+ required (global fetch)
 if (typeof fetch !== "function") {
   throw new Error("Node 18+ is required (global fetch not found).");
 }
 
-const validDateFilters = ["Last 1 month", "Last 3 months", "Last 6 months", "Last 1 year"];
-
-// Global configuration variables
-let config = null;
-let dateFilter = null;
+// Global access token
 let accessToken = null;
 
 /**
@@ -122,46 +118,29 @@ async function getGraphAccessTokenWithDeviceCode(config) {
 }
 
 /**
- * Initialize configuration from config.json and acquire access token
+ * Initialize authentication and acquire access token
+ * Requires configuration to be loaded first via config.loadConfiguration()
  * @returns {Promise<void>}
  */
-async function initializeConfiguration() {
+async function initializeAuthentication() {
   try {
-    const configPath = path.join(__dirname, "..", "config.json");
-    if (!fs.existsSync(configPath)) {
-      console.log("⚠️ config.json not found - data will only be saved locally");
-      console.log("📅 No date filter specified, showing all results");
+    const config = getConfig();
+    
+    if (!config) {
+      console.log("⚠️ No configuration loaded - authentication skipped");
       return;
     }
 
-    const configContent = fs.readFileSync(configPath, "utf-8");
-    const loadedConfig = JSON.parse(configContent);
-
-    // Validate and set date filter
-    const configDateFilter = loadedConfig.browserScraping?.dateFilter;
-    if (configDateFilter) {
-      if (validDateFilters.includes(configDateFilter)) {
-        dateFilter = configDateFilter;
-        console.log(`📅 Using date filter from config: ${dateFilter}`);
-      } else {
-        console.error(`❌ Invalid date filter in config: "${configDateFilter}"`);
-        console.error(`   Valid options: ${validDateFilters.join(", ")}`);
-        process.exit(1);
-      }
-    } else {
-      console.log("📅 No date filter specified in config, showing all results");
-    }
-
     // Determine authentication method
-    const authMethod = (loadedConfig.sharepoint?.authentication?.authMethod || "devicecode").toLowerCase();
+    const authMethod = (config.sharepoint?.authentication?.authMethod || "devicecode").toLowerCase();
     
-    if (loadedConfig.sharepoint?.siteUrl) {
+    if (config.sharepoint?.siteUrl) {
       if (authMethod === "iwa" || authMethod === "default") {
         console.log("🔑 Acquiring Graph access token via DefaultAzureCredential (IWA)...");
-        accessToken = await getGraphAccessTokenWithIWA(loadedConfig.sharepoint.authentication);
+        accessToken = await getGraphAccessTokenWithIWA(config.sharepoint.authentication);
         console.log("✅ Access token acquired successfully");
       } else if (authMethod === "devicecode") {
-        const deviceCodeConfig = loadedConfig.sharepoint.authentication.devicecode;
+        const deviceCodeConfig = config.sharepoint.authentication.devicecode;
         if (!deviceCodeConfig?.clientId || !deviceCodeConfig?.tenantId) {
           console.error("❌ clientId and tenantId are required for device code flow");
           process.exit(1);
@@ -176,27 +155,21 @@ async function initializeConfiguration() {
     } else {
       console.log("⚠️ config.json incomplete (siteUrl missing) - data saved locally only");
     }
-    config = loadedConfig;
   } catch (err) {
-    console.error("⚠️ Error loading SharePoint config:", err.message);
-    config = null;
+    console.error("⚠️ Error during authentication:", err.message);
+    throw err;
   }
 }
 
 /**
- * Get the current configuration
- * @returns {{config: object|null, dateFilter: string|null, accessToken: string|null}}
+ * Get the access token
+ * @returns {string|null}
  */
-function getConfiguration() {
-  return {
-    config,
-    dateFilter,
-    accessToken,
-  };
+function getAccessToken() {
+  return accessToken;
 }
 
 module.exports = {
-  initializeConfiguration,
-  getConfiguration,
-  validDateFilters,
+  initializeAuthentication,
+  getAccessToken,
 };

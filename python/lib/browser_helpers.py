@@ -2,22 +2,19 @@
 Browser automation helper functions for Entra portal scraping
 """
 
-import json
-import os
 import re
 import time
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Tuple
 
 from playwright.async_api import Frame, Page
+from .config import get_config
 
-# Load configuration
-config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.json')
-try:
-    with open(config_path, 'r', encoding='utf-8') as f:
-        config = json.load(f)
-except Exception as err:
-    raise RuntimeError(f"Failed to load config.json from {config_path}: {err}")
+# Get configuration from config module (loaded once during initialization)
+config = get_config()
+
+if not config:
+    raise RuntimeError('Configuration not loaded. Call load_configuration() first.')
 
 # ==================== CONSTANTS ====================
 
