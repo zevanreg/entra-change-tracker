@@ -441,9 +441,10 @@ async function extractRowDetails(page, frame, rowIndex, rowTitle = '') {
  * Scrapes all rows from a Fluent UI DetailsList with virtualized scrolling
  * @param {import('playwright').Page} page - The main page
  * @param {import('playwright').Frame} frame - The frame containing the DetailsList
+ * @param {boolean} extractDetails - Whether to extract details (URL, description, overview) by clicking each row
  * @returns {Promise<Array<Object>>} Array of row objects with field names and details
  */
-async function scrapeDetailsList(page, frame) {
+async function scrapeDetailsList(page, frame, extractDetails = true) {
   // Accumulator for processed rows
   const processedRows = [];
   const seenIndices = new Set();
@@ -504,18 +505,20 @@ async function scrapeDetailsList(page, frame) {
       // Extract details by clicking the row (with retry logic for empty descriptions)
       let details = { url: '', description: '', overview: '' };
       
-      for (let attempt = 1; attempt <= SCRAPER_CONFIG.MAX_RETRY_ATTEMPTS; attempt++) {
-        details = await extractRowDetails(page, frame, indexNum, obj.title || '');
-        
-        if (details.description) {
-          // Description found, break out of retry loop
-          break;
-        }
-        
-        if (attempt < SCRAPER_CONFIG.MAX_RETRY_ATTEMPTS) {
-          console.warn(`Empty description for row ${indexNum}, retrying (attempt ${attempt}/${SCRAPER_CONFIG.MAX_RETRY_ATTEMPTS})...`);
-        } else {
-          console.warn(`Empty description for row ${indexNum} after ${SCRAPER_CONFIG.MAX_RETRY_ATTEMPTS} attempts`);
+      if (extractDetails) {
+        for (let attempt = 1; attempt <= SCRAPER_CONFIG.MAX_RETRY_ATTEMPTS; attempt++) {
+          details = await extractRowDetails(page, frame, indexNum, obj.title || '');
+          
+          if (details.description) {
+            // Description found, break out of retry loop
+            break;
+          }
+          
+          if (attempt < SCRAPER_CONFIG.MAX_RETRY_ATTEMPTS) {
+            console.warn(`Empty description for row ${indexNum}, retrying (attempt ${attempt}/${SCRAPER_CONFIG.MAX_RETRY_ATTEMPTS})...`);
+          } else {
+            console.warn(`Empty description for row ${indexNum} after ${SCRAPER_CONFIG.MAX_RETRY_ATTEMPTS} attempts`);
+          }
         }
       }
       

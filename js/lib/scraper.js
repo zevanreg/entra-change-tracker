@@ -251,9 +251,10 @@ async function initializeBrowser() {
  * @param {import('playwright').Frame} frame - The iframe
  * @param {string|RegExp} tabName - The name of the tab to scrape
  * @param {string|null} dateFilter - Optional date filter to apply
+ * @param {boolean} extractDetails - Whether to extract details by clicking rows
  * @returns {Promise<Array<Object>|null>} Scraped data or null if tab not found
  */
-async function scrapeTab(page, frame, tabName, dateFilter = null) {
+async function scrapeTab(page, frame, tabName, dateFilter = null, extractDetails = true) {
   // Click the tab
   const tabClicked = await clickTab(frame, tabName);
 
@@ -271,7 +272,7 @@ async function scrapeTab(page, frame, tabName, dateFilter = null) {
   }
 
   // Scrape the data
-  const data = await scrapeDetailsList(page, frame);
+  const data = await scrapeDetailsList(page, frame, extractDetails);
   console.log(`✅ Extracted ${data.length} items from ${tabName}`);
 
   return data;
@@ -289,11 +290,15 @@ async function scrapeEntraPortal(dateFilter = null) {
     // Initialize browser and navigate
     ({ context, page, frame } = await initializeBrowser());
 
+    const { config } = getConfiguration();
+
     // Scrape Roadmap
-    const roadmap = await scrapeTab(page, frame, /^Roadmap$/i, dateFilter);
+    const roadmapExtractDetails = config?.lists?.roadmap?.extractDetails ?? true;
+    const roadmap = await scrapeTab(page, frame, /^Roadmap$/i, dateFilter, roadmapExtractDetails);
 
     // Scrape Change Announcements
-    const changeAnnouncements = await scrapeTab(page, frame, /^Change announcements$/i, dateFilter);
+    const changeAnnouncementsExtractDetails = config?.lists?.changeAnnouncements?.extractDetails ?? true;
+    const changeAnnouncements = await scrapeTab(page, frame, /^Change announcements$/i, dateFilter, changeAnnouncementsExtractDetails);
 
     return { roadmap, changeAnnouncements };
   } finally {

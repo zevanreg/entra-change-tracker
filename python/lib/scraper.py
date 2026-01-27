@@ -63,7 +63,8 @@ async def scrape_tab(
     page: Page,
     frame: Frame,
     tab_name: str,
-    date_filter: Optional[str] = None
+    date_filter: Optional[str] = None,
+    extract_details: bool = True
 ) -> Optional[List[Dict[str, Any]]]:
     """
     Scrape data from a specific tab.
@@ -73,6 +74,7 @@ async def scrape_tab(
         frame: The iframe
         tab_name: The name of the tab to scrape
         date_filter: Optional date filter to apply
+        extract_details: Whether to extract details by clicking rows
         
     Returns:
         Scraped data or None if tab not found
@@ -91,7 +93,7 @@ async def scrape_tab(
             print('⚠️ Could not set date range filter, continuing anyway...')
     
     # Scrape the data
-    data = await scrape_details_list(page, frame)
+    data = await scrape_details_list(page, frame, extract_details)
     print(f"✅ Extracted {len(data)} items from {tab_name}")
     
     return data
@@ -305,11 +307,17 @@ async def scrape_entra_portal(
                 # Progress dots might not exist or already hidden
                 pass
 
+            # Get config for extract_details settings
+            config_obj = get_configuration().get('config', {})
+            lists_config = config_obj.get('lists', {})
+
             # Scrape Roadmap
-            roadmap = await scrape_tab(page, frame, '/^Roadmap$/i', date_filter)
+            roadmap_extract_details = lists_config.get('roadmap', {}).get('extractDetails', True)
+            roadmap = await scrape_tab(page, frame, '/^Roadmap$/i', date_filter, roadmap_extract_details)
 
             # Scrape Change Announcements
-            change_announcements = await scrape_tab(page, frame, '/^Change announcements$/i', date_filter)
+            change_announcements_extract_details = lists_config.get('changeAnnouncements', {}).get('extractDetails', True)
+            change_announcements = await scrape_tab(page, frame, '/^Change announcements$/i', date_filter, change_announcements_extract_details)
 
             return {
                 'roadmap': roadmap,

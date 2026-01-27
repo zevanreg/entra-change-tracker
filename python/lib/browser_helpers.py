@@ -480,13 +480,14 @@ async def extract_row_details(
 
 # ==================== LIST SCRAPING ====================
 
-async def scrape_details_list(page: Page, frame: Frame) -> List[Dict[str, Any]]:
+async def scrape_details_list(page: Page, frame: Frame, extract_details: bool = True) -> List[Dict[str, Any]]:
     """
     Scrapes all rows from a Fluent UI DetailsList with virtualized scrolling.
     
     Args:
         page: The main page
         frame: The frame containing the DetailsList
+        extract_details: Whether to extract details (URL, description, overview) by clicking each row
         
     Returns:
         Array of row objects with field names and details
@@ -555,17 +556,18 @@ async def scrape_details_list(page: Page, frame: Frame) -> List[Dict[str, Any]]:
             # Extract details by clicking the row (with retry logic for empty descriptions)
             details = {'url': '', 'description': '', 'overview': ''}
             
-            for attempt in range(1, SCRAPER_CONFIG['MAX_RETRY_ATTEMPTS'] + 1):
-                details = await extract_row_details(page, frame, index_num, obj.get('title', ''))
-                
-                if details['description']:
-                    # Description found, break out of retry loop
-                    break
-                
-                if attempt < SCRAPER_CONFIG['MAX_RETRY_ATTEMPTS']:
-                    print(f"Empty description for row {index_num}, retrying (attempt {attempt}/{SCRAPER_CONFIG['MAX_RETRY_ATTEMPTS']})...")
-                else:
-                    print(f"Empty description for row {index_num} after {SCRAPER_CONFIG['MAX_RETRY_ATTEMPTS']} attempts")
+            if extract_details:
+                for attempt in range(1, SCRAPER_CONFIG['MAX_RETRY_ATTEMPTS'] + 1):
+                    details = await extract_row_details(page, frame, index_num, obj.get('title', ''))
+                    
+                    if details['description']:
+                        # Description found, break out of retry loop
+                        break
+                    
+                    if attempt < SCRAPER_CONFIG['MAX_RETRY_ATTEMPTS']:
+                        print(f"Empty description for row {index_num}, retrying (attempt {attempt}/{SCRAPER_CONFIG['MAX_RETRY_ATTEMPTS']})...")
+                    else:
+                        print(f"Empty description for row {index_num} after {SCRAPER_CONFIG['MAX_RETRY_ATTEMPTS']} attempts")
             
             obj['url'] = details['url']
             obj['description'] = details['description']

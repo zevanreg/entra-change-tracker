@@ -22,6 +22,7 @@
     "roadmap": {
       "name": "Roadmap",
       "dateField": "ReleaseDate",
+      "extractDetails": false,
       "mapping": {
         "Title": "title",
         "Category": "changeEntityCategory",
@@ -37,6 +38,7 @@
     "changeAnnouncements": {
       "name": "ChangeAnnouncements",
       "dateField": "AnnouncementDate",
+      "extractDetails": false,
       "mapping": {
         "Title": "title",
         "Service": "changeEntityService",
@@ -106,6 +108,7 @@
     "totalTimeoutMs": 180000,
     "maxRetryAttempts": 3,
     "clickOutsideCoords": { "x": 50, "y": 50 }
+  },
 
   // HTTP-based scraping (for public pages like What's New)
   "releaseTypeMapping": {
