@@ -109,10 +109,14 @@ async function itemExists(token, siteId, listId, title, dateField, dateValue) {
     const safeTitle = title.replace(/'/g, "''");
     const safeDate = dateValue.replace(/'/g, "''");
     
+    // Build filter clause and URL-encode it to handle special characters like &
+    const filterClause = `fields/Title eq '${safeTitle}' and fields/${dateField} eq '${safeDate}'`;
+    const encodedFilter = encodeURIComponent(filterClause);
+    
     // Query for items with matching Title and date field
     const endpoint = 
       `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items` +
-      `?$filter=fields/Title eq '${safeTitle}' and fields/${dateField} eq '${safeDate}'` +
+      `?$filter=${encodedFilter}` +
       `&$select=id&$top=1`;
     
     const result = await graphFetch(token, "GET", endpoint);

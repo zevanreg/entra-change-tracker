@@ -167,10 +167,15 @@ def item_exists(
         safe_title = title.replace("'", "''")
         safe_date = date_value.replace("'", "''")
         
+        # Build filter clause and URL-encode it to handle special characters like &
+        from urllib.parse import quote
+        filter_clause = f"fields/Title eq '{safe_title}' and fields/{date_field} eq '{safe_date}'"
+        encoded_filter = quote(filter_clause)
+        
         # Query for items with matching Title and date field
         endpoint = (
             f"https://graph.microsoft.com/v1.0/sites/{site_id}/lists/{list_id}/items"
-            f"?$filter=fields/Title eq '{safe_title}' and fields/{date_field} eq '{safe_date}'"
+            f"?$filter={encoded_filter}"
             f"&$select=id&$top=1"
         )
         
