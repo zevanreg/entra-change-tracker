@@ -1,0 +1,36 @@
+﻿ListSchema={"schemaXmlList":["<Field ID=\"{fa564e0f-0c70-4ab9-b863-0177e6ddd247}\" Type=\"Text\" Name=\"Title\" DisplayName=\"Title\" Required=\"FALSE\" SourceID=\"http://schemas.microsoft.com/sharepoint/v3\" StaticName=\"Title\" FromBaseType=\"TRUE\" MaxLength=\"255\" Indexed=\"TRUE\" />","<Field DisplayName=\"Service\" Format=\"Dropdown\" IsModern=\"TRUE\" MaxLength=\"255\" Name=\"Service\" Title=\"Service\" Type=\"Text\" ID=\"{11975f1d-37f1-4d9c-9487-0bf3e6bb02bd}\" StaticName=\"Service\" />","<Field Type=\"Text\" DisplayName=\"Change Type\" Required=\"FALSE\" EnforceUniqueValues=\"FALSE\" Indexed=\"FALSE\" MaxLength=\"255\" ID=\"{7511c3f4-2f47-459c-99ea-55930fc3d592}\" StaticName=\"Change_x0020_Type\" Name=\"Change_x0020_Type\" />","<Field Type=\"Text\" DisplayName=\"Announcement Date\" Required=\"FALSE\" EnforceUniqueValues=\"FALSE\" Indexed=\"TRUE\" MaxLength=\"255\" ID=\"{6448b0ed-fd42-4f6c-abf8-4bf6adc4fa9d}\" StaticName=\"Announcement_x0020_Date\" Name=\"Announcement_x0020_Date\" />","<Field Type=\"Text\" DisplayName=\"Target Date\" Required=\"FALSE\" EnforceUniqueValues=\"FALSE\" Indexed=\"FALSE\" MaxLength=\"255\" ID=\"{21735227-9141-4c1b-a896-0e608bc7b0e8}\" StaticName=\"Target_x0020_Date\" Name=\"Target_x0020_Date\" />","<Field Type=\"Text\" DisplayName=\"Action Required\" Required=\"FALSE\" EnforceUniqueValues=\"FALSE\" Indexed=\"FALSE\" MaxLength=\"255\" ID=\"{b77e6e72-0fa6-4f48-b02e-064c110a9265}\" StaticName=\"Action_x0020_Required\" Name=\"Action_x0020_Required\" />","<Field DisplayName=\"Tags\" Format=\"Dropdown\" IsModern=\"TRUE\" MaxLength=\"255\" Name=\"Tags\" Title=\"Tags\" Type=\"Text\" ID=\"{a9792f7d-c5b9-4c98-95a5-82f7edc62b0c}\" StaticName=\"Tags\" />","<Field AppendOnly=\"FALSE\" DisplayName=\"Overview\" Format=\"Dropdown\" IsModern=\"TRUE\" IsolateStyles=\"FALSE\" Name=\"Overview\" RichText=\"FALSE\" RichTextMode=\"Compatible\" Title=\"Overview\" Type=\"Note\" ID=\"{74af323b-c3cf-40cb-8c6b-b0c8ecfa69f2}\" StaticName=\"Overview\" />","<Field AppendOnly=\"FALSE\" DisplayName=\"Description\" Format=\"Dropdown\" IsModern=\"TRUE\" IsolateStyles=\"FALSE\" Name=\"Description\" RichText=\"FALSE\" RichTextMode=\"Compatible\" Title=\"Description\" Type=\"Note\" ID=\"{2ad0aa73-96a4-4b4e-9e59-e3bb81df41eb}\" StaticName=\"Description\" />","<Field DisplayName=\"Url\" Format=\"Dropdown\" IsModern=\"TRUE\" MaxLength=\"255\" Name=\"Url\" Title=\"Url\" Type=\"Text\" ID=\"{e8a2b88f-92e1-49ba-9afe-2912edc6653d}\" StaticName=\"Url\" />","<Field ID=\"{82642ec8-ef9b-478f-acf9-31f7d45fbc31}\" ReadOnly=\"TRUE\" Type=\"Computed\" Name=\"LinkTitle\" DisplayName=\"Title\" DisplayNameSrcField=\"Title\" ClassInfo=\"Menu\" AuthoringInfo=\"(linked to item with edit menu)\" ListItemMenuAllowed=\"Required\" LinkToItemAllowed=\"Prohibited\" SourceID=\"http://schemas.microsoft.com/sharepoint/v3\" StaticName=\"LinkTitle\" FromBaseType=\"TRUE\"><FieldRefs><FieldRef Name=\"Title\" /><FieldRef Name=\"LinkTitleNoMenu\" /><FieldRef Name=\"_EditMenuTableStart2\" /><FieldRef Name=\"_EditMenuTableEnd\" /></FieldRefs><DisplayPattern><FieldSwitch><Expr><GetVar Name=\"FreeForm\" /></Expr><Case Value=\"TRUE\"><Field Name=\"LinkTitleNoMenu\" /></Case><Default><HTML><![CDATA[<div class=\"ms-vb itx\" onmouseover=\"OnItem(this)\" CTXName=\"ctx]]></HTML><Field Name=\"_EditMenuTableStart2\" /><HTML><![CDATA[\">]]></HTML><Field Name=\"LinkTitleNoMenu\" /><HTML><![CDATA[</div>]]></HTML><HTML><![CDATA[<div class=\"s4-ctx\" onmouseover=\"OnChildItem(this.parentNode); return false;\">]]></HTML><HTML><![CDATA[<span>&nbsp;</span>]]></HTML><HTML><![CDATA[<a onfocus=\"OnChildItem(this.parentNode.parentNode); return false;\" onclick=\"PopMenuFromChevron(event); return false;\" href=\"javascript:;\" title=\"Open Menu\"></a>]]></HTML><HTML><![CDATA[<span>&nbsp;</span>]]></HTML><HTML><![CDATA[</div>]]></HTML></Default></FieldSwitch></DisplayPattern></Field>"]}
+"Title","Service","Change Type","Announcement Date","Target Date","Action Required","Tags","Overview","Description","Url"
+"Retirement of Iteration 2 (beta) Privileged Identity Management (PIM) API","MS Graph","Deprecation","12/1/2025","10/28/2026","Yes","IDENTITY MODERNIZATION","Migrate to the Iteration 3 (GA) PIM APIs before October 28, 2026.","What is changing?
+
+Iteration 2 (beta) PIM API for Azure resources and Microsoft Entra roles is deprecated and will stop returning data on October 28, 2026.
+
+Action required
+
+1. Migrate to the Iteration 3 (GA) APIs.
+
+2. Begin migration planning and testing as soon as possible.
+
+3, Halt any new development using Iteration 2 APIs.
+
+4. Review documentation for Iteration 3 APIs to ensure compatibility.","https://learn.microsoft.com/graph/api/resources/privilegedidentitymanagement-root?view=graph-rest-beta&WT.mc_id=Portal-Microsoft_AAD_IAM#migrate-from-pim-iteration-2-apis-to-pim-iteration-3-apis"
+"Update to Revoke Multifactor Authentication Sessions","Authentications (Logins)","Feature Change","12/1/2025","2/1/2026","Yes","IDENTITY SECURITY",,"What is changing?
+
+Starting February 2026, we are replacing the current Revoke multifactor authentication sessions button with the Revoke sessions button in the Microsoft Entra portal. The legacy Revoke MFA sessions action only applies to per-user MFA enforcement, which has led to confusion. To simplify and ensure consistent behavior, the new Revoke sessions button will invalidate all user sessions, including MFA, regardless of whether MFA is enforced via Conditional Access or per-user policies.
+
+Action required
+
+Admins should update workflows and guidance to use Revoke sessions instead of Revoke MFA sessions. The Revoke MFA sessions option will be removed from the portal after this change.",
+"Block External Script Injection in Microsoft Entra ID Signin","Authentications (Logins)","Breaking Change","12/1/2025","11/1/2025","Yes","IDENTITY SECURITY",,"What is changing?
+
+In November 2025, Microsoft Entra ID rolled out a stricter Content Security Policy (CSP) for browser-based sign-ins on login.microsoftonline.com. This update blocks unauthorized scripts and only allows scripts from trusted Microsoft domains, enhancing protection against cross-site scripting (XSS) attacks.
+
+Action required
+
+Admins should ensure that no browser extensions or tools inject scripts into the sign-in experience. Any existing tools that do so must be replaced, and sign-in flows should be tested to identify and fix violations.",
+"Jailbreak Detection in Authenticator App","Authentications (Logins)","Breaking Change","12/1/2025","2/1/2026","Yes","IDENTITY SECURITY",,"What is changing?
+
+Starting February 2026, we will introduce Jailbreak/Root detection for Microsoft Entra credentials in the Authenticator app. This update boosts security by disabling Microsoft Entra credentials on jail-broken or rooted devices, wiping any existing credentials automatically. It applies to both iOS and Android, requires no admin setup, and does not affect personal or third-party accounts.
+
+Action required
+
+Notify end users about this upcoming change. Authenticator will become unusable for Microsoft Entra accounts on jail-broken or rooted devices.","https://support.microsoft.com/account-billing/about-microsoft-authenticator-9783c865-0308-42fb-a519-8cf666fe0acc"
