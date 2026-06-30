@@ -119,6 +119,7 @@ Configures Playwright-based scraping of the Entra Portal:
 "browserScraping": {
   "entraPortal": "https://entra.microsoft.com/",
   "dateFilter": "Last 3 months",
+  "headless": false,
   "selectors": { /* CSS selectors */ },
   "timeouts": { /* Timeout values */ },
   "scraperConfig": { /* Scraping behavior */ },
@@ -135,6 +136,7 @@ Configures Playwright-based scraping of the Entra Portal:
 **General Settings:**
 - `entraPortal` (string): Entra portal URL
 - `dateFilter` (string): Date range filter - `"Last 1 month"`, `"Last 3 months"`, `"Last 6 months"`, `"Last 1 year"`, or `""` (all)
+- `headless` (boolean): Run the browser without a visible window - `true` (hidden) or `false` (visible, default)
 - `selectors` (object): CSS selectors for page elements (see template for details)
 - `timeouts` (object): Timeout values in milliseconds for various operations
 - `scraperConfig` (object): Scraping behavior settings (delays, retries, etc.)

@@ -204,9 +204,12 @@ async function scrapeWhatsNewPage() {
  * @returns {Promise<{context: import('playwright').BrowserContext, page: import('playwright').Page, frame: import('playwright').Frame}>}
  */
 async function initializeBrowser() {
+  const config = getConfig();
+  const headless = config?.browserScraping?.headless ?? false;
+
   const context = await chromium.launchPersistentContext('./edge-profile', {
     channel: 'msedge',
-    headless: false,
+    headless,
     args: ['--disable-blink-features=AutomationControlled'],
     viewport: { width: 1920, height: 1080 },
     deviceScaleFactor: 1,
@@ -214,7 +217,6 @@ async function initializeBrowser() {
   
   const page = context.pages()[0];
 
-  const config = getConfig();
   const entraUrl = config.browserScraping.entraPortal;
 
   // Navigate to Entra portal

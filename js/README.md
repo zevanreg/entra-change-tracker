@@ -103,6 +103,7 @@ Configures Playwright-based scraping of the Entra Portal:
 "browserScraping": {
   "entraPortal": "https://entra.microsoft.com/",
   "dateFilter": "Last 3 months",
+  "headless": false,
   "selectors": { /* CSS selectors */ },
   "timeouts": { /* Timeout values */ },
   "scraperConfig": { /* Scraping behavior */ },
@@ -119,6 +120,7 @@ Configures Playwright-based scraping of the Entra Portal:
 **General Settings:**
 - `entraPortal` (string): Entra portal URL
 - `dateFilter` (string): Date range filter - `"Last 1 month"`, `"Last 3 months"`, `"Last 6 months"`, `"Last 1 year"`, or `""` (all)
+- `headless` (boolean): Run the browser without a visible window - `true` (hidden) or `false` (visible, default)
 - `selectors` (object): CSS selectors for page elements (see template for details)
 - `timeouts` (object): Timeout values in milliseconds for various operations
 - `scraperConfig` (object): Scraping behavior settings (delays, retries, etc.)
@@ -183,7 +185,7 @@ node entra.js
 
 **Subsequent runs:**
 - Authentication is maintained
-- Set `headless: true` in the script if desired
+- Set `"headless": true` in `config.json` to run without a visible browser window
 
 ## Output
 
@@ -285,14 +287,12 @@ The scraper uses a modular architecture with separation of concerns:
 
 ### Running in Debug Mode
 
-Set `headless: false` in the script to see browser actions:
+Set `"headless": false` in `config.json` (the default) to watch the browser perform the automation:
 
-```javascript
-const context = await chromium.launchPersistentContext('./edge-profile', {
-  channel: 'msedge',
-  headless: false, // Watch the automation
-  // ...
-});
+```json
+"browserScraping": {
+  "headless": false
+}
 ```
 
 ### Modifying Selectors

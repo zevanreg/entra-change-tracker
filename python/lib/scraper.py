@@ -258,13 +258,14 @@ async def scrape_entra_portal() -> Dict[str, Optional[List[Dict[str, Any]]]]:
     browser_scraping = config['browserScraping']
     entra_url = browser_scraping['entraPortal']
     date_filter = browser_scraping.get('dateFilter')
+    headless = browser_scraping.get('headless', False)
     
     async with async_playwright() as playwright:
         profile_dir = Path(__file__).resolve().parent.parent / "edge-profile"
         edge_exe = Path("C:/Program Files/Microsoft/Edge/Application/msedge.exe")
 
         launch_kwargs = {
-            "headless": False,
+            "headless": headless,
             "args": ["--disable-blink-features=AutomationControlled"],
             "viewport": {"width": 1920, "height": 1080},
             "device_scale_factor": 1,
