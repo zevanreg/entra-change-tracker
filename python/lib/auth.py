@@ -8,6 +8,11 @@ from typing import Optional, Dict
 
 import msal
 from azure.identity import DefaultAzureCredential
+from msal_extensions import (
+    PersistedTokenCache,
+    FilePersistence,
+    build_encrypted_persistence,
+)
 
 from .config import get_config
 
@@ -20,25 +25,36 @@ def _get_token_cache_path() -> str:
     return os.path.join(os.path.dirname(os.path.dirname(__file__)), ".token-cache.json")
 
 
-def _load_token_cache() -> msal.SerializableTokenCache:
-    """Load or create a token cache."""
-    cache = msal.SerializableTokenCache()
-    cache_path = _get_token_cache_path()
-    
-    if os.path.exists(cache_path):
-        with open(cache_path, 'r') as f:
-            cache.deserialize(f.read())
-    
-    return cache
+def _build_token_cache() -> PersistedTokenCache:
+    """
+    Build an OS-encrypted, persistent MSAL token cache.
 
-
-def _save_token_cache(cache: msal.SerializableTokenCache) -> None:
-    """Save the token cache to disk."""
+    Secrets are encrypted at rest using the platform's secure storage via
+    msal-extensions: DPAPI on Windows, Keychain on macOS, and libsecret on
+    Linux. Persistence is handled transparently by PersistedTokenCache, so no
+    manual serialize/deserialize is required.
+    """
     cache_path = _get_token_cache_path()
-    
-    if cache.has_state_changed:
-        with open(cache_path, 'w') as f:
-            f.write(cache.serialize())
+
+    try:
+        persistence = build_encrypted_persistence(cache_path)
+
+        # A cache written by the legacy plaintext implementation (or by a
+        # different machine/user) cannot be decrypted here. Detect that case
+        # and discard it so a fresh, encrypted cache is created.
+        if os.path.exists(cache_path):
+            try:
+                persistence.load()
+            except Exception:
+                print("⚠️ Existing token cache could not be decrypted; "
+                      "discarding it and re-authenticating.")
+                os.remove(cache_path)
+    except Exception as err:
+        print(f"⚠️ OS-level encryption unavailable for the token cache ({err}); "
+              "falling back to an unencrypted file.")
+        persistence = FilePersistence(cache_path)
+
+    return PersistedTokenCache(persistence)
 
 
 def get_graph_access_token_with_iwa(config: Dict[str, str]) -> str:
@@ -78,7 +94,7 @@ def get_graph_access_token_with_device_code(config: Dict[str, str]) -> str:
     Returns:
         Access token string
     """
-    cache = _load_token_cache()
+    cache = _build_token_cache()
     
     app = msal.PublicClientApplication(
         client_id=config['clientId'],
@@ -98,7 +114,6 @@ def get_graph_access_token_with_device_code(config: Dict[str, str]) -> str:
             )
             if result and "access_token" in result:
                 print("✅ Using cached token")
-                _save_token_cache(cache)
                 return result["access_token"]
         except Exception:
             print("⚠️ Cached token invalid or expired, requesting new token...")
@@ -119,7 +134,6 @@ def get_graph_access_token_with_device_code(config: Dict[str, str]) -> str:
     result = app.acquire_token_by_device_flow(flow)
     
     if "access_token" in result:
-        _save_token_cache(cache)
         return result["access_token"]
     else:
         raise Exception(f"Authentication failed: {result.get('error_description', result)}")
