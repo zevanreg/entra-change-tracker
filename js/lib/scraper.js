@@ -79,9 +79,8 @@ function extractWhatsNewItem(h3Element, monthText, $) {
       fullTitle = titleLink.text().trim();
       item.link = titleLink.attr('href') || '';
       if (item.link && !item.link.startsWith('http')) {
-        const config = getConfig();
-        const baseUrl = config.httpScraping.microsoftLearnBase;
-        item.link = `${baseUrl}${item.link}`;
+        const pageUrl = getConfig().httpScraping.whatsNew;
+        item.link = new URL(item.link, pageUrl).href;
       }
     } else {
       fullTitle = h3Element.text().trim();
@@ -109,6 +108,7 @@ function extractWhatsNewItem(h3Element, monthText, $) {
     // Extract detail from following paragraphs
     const detailParts = [];
     let current = h3Element.next();
+    let lastBodyLinkHref = '';
     
     while (current.length > 0 && !['h2', 'h3'].includes(current.prop('tagName')?.toLowerCase())) {
       if (current.prop('tagName')?.toLowerCase() === 'p') {
@@ -139,10 +139,24 @@ function extractWhatsNewItem(h3Element, monthText, $) {
         });
       }
       
+      // Track the last hyperlink in the body as a fallback for entries whose
+      // title has no link (the reference link's preceding text may vary).
+      const bodyLinks = current.find('a[href]');
+      if (bodyLinks.length > 0) {
+        lastBodyLinkHref = bodyLinks.last().attr('href') || lastBodyLinkHref;
+      }
+      
       current = current.next();
     }
     
     item.detail = detailParts.join(' ');
+    
+    // Fallback: if the title had no anchor, use the last link found in the body
+    // (e.g. "For more information, see: <link>"). Resolve relative hrefs against
+    // the page URL so paths like "../identity/..." expand correctly.
+    if (!item.link && lastBodyLinkHref) {
+      item.link = new URL(lastBodyLinkHref, getConfig().httpScraping.whatsNew).href;
+    }
     
     return item.title ? item : null;
   } catch (error) {

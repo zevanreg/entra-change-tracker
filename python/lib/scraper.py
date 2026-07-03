@@ -7,6 +7,7 @@ import re
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+from urllib.parse import urljoin
 
 from playwright.async_api import async_playwright, Page, Frame
 from bs4 import BeautifulSoup
@@ -176,10 +177,8 @@ def extract_whats_new_item(h3_element, month_text: str) -> Optional[Dict[str, An
             full_title = title_link.get_text(strip=True)
             item['link'] = title_link.get('href', '')
             if item['link'] and not item['link'].startswith('http'):
-                config = get_config()
-                http_scraping = config['httpScraping']
-                base_url = http_scraping['microsoftLearnBase']
-                item['link'] = f"{base_url}{item['link']}"
+                page_url = get_config()['httpScraping']['whatsNew']
+                item['link'] = urljoin(page_url, item['link'])
         else:
             full_title = h3_element.get_text(strip=True)
         
@@ -204,6 +203,7 @@ def extract_whats_new_item(h3_element, month_text: str) -> Optional[Dict[str, An
         
         # Extract detail from the following paragraph(s)
         detail_parts = []
+        last_body_link_href = ''
         current = h3_element.find_next_sibling()
         
         while current and current.name not in ['h2', 'h3']:
@@ -235,9 +235,22 @@ def extract_whats_new_item(h3_element, month_text: str) -> Optional[Dict[str, An
                 for li in list_items:
                     detail_parts.append(f"• {li.get_text(strip=True)}")
             
+            # Track the last hyperlink in the body as a fallback for entries whose
+            # title has no link (the reference link's preceding text may vary).
+            body_links = current.find_all('a', href=True)
+            if body_links:
+                last_body_link_href = body_links[-1].get('href', '') or last_body_link_href
+            
             current = current.find_next_sibling()
         
         item['detail'] = ' '.join(detail_parts)
+        
+        # Fallback: if the title had no anchor, use the last link found in the body
+        # (e.g. "For more information, see: <link>"). Resolve relative hrefs against
+        # the page URL so paths like "../identity/..." expand correctly.
+        if not item['link'] and last_body_link_href:
+            page_url = get_config()['httpScraping']['whatsNew']
+            item['link'] = urljoin(page_url, last_body_link_href)
         
         # Only return item if it has a title
         return item if item['title'] else None
